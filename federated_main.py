@@ -1,7 +1,6 @@
 import os
 import copy
 import time
-import pickle
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -72,12 +71,6 @@ if __name__ == '__main__':
     weight = np.zeros([args.epochs + 1, args.num_users]) + 1
     score = np.zeros([args.epochs, args.num_users])
     norm = np.zeros([args.epochs])
-
-    # baseline weight distribution
-    #for epoch in range(args.epochs+1):
-    #    for n in range(args.num_users):
-    #        scaled = n / (args.num_users - 1)
-    #        weight[epoch, n] = 0.5 + 0.5 * scaled + scaled * scaled
 
     # initial model's accuracy
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
@@ -165,21 +158,12 @@ if __name__ == '__main__':
                 norm[epoch] = norm[epoch] + weight[epoch, int(contributor)] / (args.num_users * args.frac)
             if improvement[epoch] < 0:
                 for contributor in contributors[epoch]:
-                    #weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * kappa  # naive method (only multiplication with no proper distribution)
-                    score[epoch, int(contributor)] = score[epoch, int(contributor)] - weight[epoch, int(contributor)] / norm[epoch]
+                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * kappa
             if improvement[epoch] > improvement[epoch - 1]:
                 for contributor in contributors[epoch]:
-                    #weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * 1 / kappa  # naive method (only multiplication with no proper distribution)
-                    score[epoch, int(contributor)] = score[epoch, int(contributor)] + weight[epoch, int(contributor)] / norm[epoch]
+                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * 1 / kappa
                 for contributor in contributors[epoch - 1]:
-                    #weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * kappa  # naive method (only multiplication with no proper distribution)
-                    score[epoch, int(contributor)] = score[epoch, int(contributor)] - weight[epoch - 1, int(contributor)] / norm[epoch - 1]
-            if not max(score[epoch]) == min(score[epoch]):
-                # normalizing it to [0,1]
-                x = (score[epoch] - min(score[epoch])) / (max(score[epoch]) - min(score[epoch]))
-                # scaling it to [0.5,2] such that 0->0.5, 0.5->1, 1->2
-                weight[epoch + 1] = 0.5 + 0.5 * x + x * x
-                #weight[epoch + 1] = weight[epoch]
+                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * kappa
 
     # Test inference after completion of training
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
