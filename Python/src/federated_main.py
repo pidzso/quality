@@ -23,9 +23,9 @@ if __name__ == '__main__':
     path_project = os.path.abspath('..')
     logger = SummaryWriter('../logs')
     path = args.model + '_' + args.dataset + '_' + str(args.num_users) + \
-           '\\' + args.noise_type + '_' + str(args.noise_size) + '_' + str(args.weight) + \
-           '\\' + str(args.seed) + '\\'
-    Path(path_project + '\\save\\' + path).mkdir(parents=True, exist_ok=True)
+           '/' + args.noise_type + '_' + str(args.noise_size) + '_' + str(args.weight) + \
+           '/' + str(args.seed) + '/'
+    Path(path_project + '/save/' + path).mkdir(parents=True, exist_ok=True)
 
     if args.gpu:
         # Nvidia card ID = 0
@@ -49,11 +49,12 @@ if __name__ == '__main__':
             tmp.pop(n, None)
             for key in tmp.keys():
                 ber[list(tmp[key])] = 0
-            train_dataset.targets = torch.where(ber > 0, ran, train_dataset.targets)
+            tmp = torch.as_tensor(train_dataset.targets)
+            train_dataset.targets = torch.where(ber > 0, ran, tmp)
 
-    # ToDo check if this is ok if not modified
-    #train_dataset.test_labels = train_dataset.targets
-    #train_dataset.train_labels = train_dataset.targets
+    # ToDo not working for MNIST, minor change for CIFAR
+    #train_dataset.test_labels = torch.as_tensor(train_dataset.targets)
+    #train_dataset.train_labels = torch.as_tensor(train_dataset.targets)
 
     # set cheat to correspond to method/parameter
     cheat = np.zeros([args.num_users])
@@ -106,7 +107,6 @@ if __name__ == '__main__':
     test_improvement = np.zeros(args.epochs)
     train_improvement = np.zeros(args.epochs)
     weight = np.zeros([args.epochs + 1, args.num_users]) + 1
-    score = np.zeros([args.epochs, args.num_users])
 
     # initial model's accuracy
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     old_tr_acc = test_acc
 
     # save starting accuracy
-    with open('../save/' + path + '/start.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/start.npy', 'wb') as f:
         np.save(f, np.array([100 * round(test_acc, 6)]))
 
     for epoch in tqdm(range(args.epochs)):
@@ -139,7 +139,7 @@ if __name__ == '__main__':
                     w[key] = 2 * global_model.state_dict()[key] - w[key]
 
             # weightening the contribution
-            if args.weight == 1:
+            if args.weight != 0.:
                 for key in w:
                     w[key] = global_model.state_dict()[key] + (w[key] - global_model.state_dict()[key]) * weight[epoch, idx]
 
@@ -175,17 +175,16 @@ if __name__ == '__main__':
         old_test_acc = test_acc
 
         # update participant weights
-        if args.weight != 0 and epoch > 0:
-            score[epoch] = score[epoch - 1]
+        if args.weight != 0. and epoch > 0:
             weight[epoch + 1] = weight[epoch]
             if test_improvement[epoch] < 0:
                 for contributor in contributors[epoch]:
-                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 + args.weight)
+                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 - args.weight)
             if test_improvement[epoch] > test_improvement[epoch - 1]:
                 for contributor in contributors[epoch]:
-                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 - args.weight)
-                for contributor in contributors[epoch - 1]:
                     weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 + args.weight)
+                for contributor in contributors[epoch - 1]:
+                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 - args.weight)
 
     # Test inference after completion of training
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
@@ -195,13 +194,13 @@ if __name__ == '__main__':
     print("|---- Train Accuracy: {:.2f}%".format(100 * tr_acc))
 
     # save results
-    with open('../save/' + path + '/contributor.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/contributor.npy', 'wb') as f:
         np.save(f, np.array(contributors))
-    with open('../save/' + path + '/weight.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/weight.npy', 'wb') as f:
         np.save(f, np.array(weight))
-    with open('../save/' + path + '/deviant.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/deviant.npy', 'wb') as f:
         np.save(f, np.array(deviants))
-    with open('../save/' + path + '/test.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/test.npy', 'wb') as f:
         np.save(f, np.array(test_improvement))
-    with open('../save/' + path + '/train.npy', 'wb') as f:
+    with open(path_project + '/save/' + path + '/train.npy', 'wb') as f:
         np.save(f, np.array(train_improvement))

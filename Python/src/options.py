@@ -5,7 +5,7 @@ def args_parser():
     # parser for federated_main
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--seed',       type=int,   default=1,       help='random seed')
+    parser.add_argument('--seed',       type=int,   default=0,       help='random seed')
     parser.add_argument('--instance',   type=str,   default='',      help='identification of the run')
     parser.add_argument('--dataset',    type=str,   default='mnist', help="name of dataset")
     parser.add_argument('--iid',        type=int,   default=1,       help='Default set to IID. Set to 0 for non-IID.')
@@ -16,7 +16,7 @@ def args_parser():
     parser.add_argument('--optimizer',  type=str,   default='sgd',   help="type of optimizer")
     parser.add_argument('--epochs',     type=int,   default=20,      help="number of rounds of training")
     parser.add_argument('--lr',         type=float, default=0.01,    help='learning rate')
-    parser.add_argument('--do',         type=float, default=0.5,     help='drop out')
+    parser.add_argument('--do',         type=float, default=0.1,     help='drop out')
     parser.add_argument('--norm',       type=str,   default='None',  help="batch_norm, layer_norm, or None")
     parser.add_argument('--local_ep',   type=int,   default=1,       help="the number of local epochs: E")
     parser.add_argument('--local_bs',   type=int,   default=32,      help="local batch size: B")

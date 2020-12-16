@@ -1,80 +1,81 @@
 from q_inf import aggregate, test, quality_inf, catch, optimize, test, highest, avg, readOLD
 import numpy as np
+import matplotlib.pyplot as plt
 
-# experiment parameters
-experiment = ['000', '001', '002', '003', '004', '005', '006', '007', '008', '009']
-tests = [['help', 'neg', 'inc']]#, ['help'], ['neg'], ['inc']]
-datasets = ['mnist', 'cifar']
-models = ['mlp', 'cnn']
-option = 'count'
-treshold = 0
-participants = 5
-Niteration = 250
-bestof = 5
-ignorelast = 0
-ignorefirst = 0
 
-'''
-# checking multiple treshold
-print(optimize(['neg'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['inc'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['help'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['neg', 'inc'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['neg', 'help'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['inc', 'help'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-print(optimize(['neg', 'inc', 'help'], experiment, models, datasets, participants, option, ignorefirst, ignorelast))
-'''
+def create_fig(model, data, participants, noise_type, noise_size, weight, rounds, instance_num):
 
-'''
-# check multiple ingorefirst
-for ign in [0, 2, 4, 6, 8, 10]:
-    ignorefirst = ign
-    print(optimize(['neg', 'inc', 'help'], experiment, models, datasets, participants, 'count', ignorefirst, ignorelast))
-    print(optimize(['neg', 'inc', 'help'], experiment, models, datasets, participants, 'value', ignorefirst, ignorelast))
-'''
+    train = np.zeros((instance_num, rounds + 1))
+    test = np.zeros((instance_num, rounds + 1))
+    path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weight) + '/'
 
-'''
-# determine the best test
-success = catch(tests, len(experiment), models, datasets, option, ignorefirst, ignorelast, treshold, bestof)
-att = [(success['a'][0][0][i]+success['a'][0][1][i]+success['a'][1][0][i]+success['a'][1][1][i])/4 for i in range(len(tests))]
-fre = [(success['f'][0][0][i]+success['f'][0][1][i]+success['f'][1][0][i]+success['f'][1][1][i])/4 for i in range(len(tests))]
-mni = [(success['a'][0][0][i]+success['f'][0][0][i]+
-        success['a'][1][0][i]+success['f'][1][0][i])/4 for i in range(len(tests))]
-cif = [(success['a'][0][1][i]+success['f'][0][1][i]+
-        success['a'][1][1][i]+success['f'][1][1][i])/4 for i in range(len(tests))]
-mlp = [(success['a'][0][0][i]+success['f'][0][0][i]+success['a'][0][1][i]+
-        success['f'][0][1][i])/4 for i in range(len(tests))]
-cnn = [(success['a'][1][0][i]+success['f'][1][0][i]+success['a'][1][1][i]+
-        +success['f'][1][1][i])/4 for i in range(len(tests))]
-mind = [(success['a'][0][0][i]+success['a'][0][1][i]+success['a'][1][0][i]+success['a'][1][1][i]+
-         success['f'][0][0][i]+success['f'][0][1][i]+success['f'][1][0][i]+success['f'][1][1][i])/8 for i in range(len(tests))]
-print(att.index(max(att)), fre.index(max(fre))),
-      mni.index(max(mni)), cif.index(max(cif)), mlp.index(max(mlp)), cnn.index(max(cnn)), mind.index(max(mind)))
-'''
+    for i in np.arange(instance_num):
+        train[i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/train.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
+        test[i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/test.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
 
-#base = aggregate(experiment, participants, option, ignorefirst, ignorelast, treshold)
-#success = catch(tests, len(experiment), models, datasets, option, ignorefirst, ignorelast, treshold, bestof)
-#high = highest(tests, len(experiment), models, datasets, option, ignorefirst, ignorelast, treshold)
-#av = avg(tests, len(experiment), models, datasets, option, ignorefirst, ignorelast, treshold)
-#linscore = quality_inf(['neg', 'help', 'inc'], len(experiment),  models, datasets, participants, option, ignorefirst, ignorelast, treshold)
+    mins = np.transpose(test).min(axis=1)
+    maxes = np.transpose(test).max(axis=1)
+    means = np.transpose(test).mean(axis=1)
+    std = np.transpose(test).std(axis=1)
 
-start = np.zeros([10])
-improvement = np.zeros([10, Niteration])
-weights = np.zeros([10, participants])
+    if noise_type == 'linear':
+        plt.errorbar(np.arange(rounds + 1), means, std, fmt='ok', lw=3)
+        plt.errorbar(np.arange(rounds + 1), means, [means - mins, maxes - means],
+                     fmt='.k', ecolor='gray', lw=1)
+        plt.xlim(-1, 101)
+    elif noise_type == 'no':
+        avg_tr = np.average(train, axis=0)
+        avg_te = np.average(test, axis=0)
 
-start[0], deviants, contributors, improvement[0], weights[0] = readOLD('110l')
-start[1], deviants, contributors, improvement[1], weights[1] = readOLD('111l')
-start[2], deviants, contributors, improvement[2], weights[2] = readOLD('112l')
-start[3], deviants, contributors, improvement[3], weights[3] = readOLD('113l')
-start[4], deviants, contributors, improvement[4], weights[4] = readOLD('114l')
-start[5], deviants, contributors, improvement[5], weights[5] = readOLD('115l')
-start[6], deviants, contributors, improvement[6], weights[6] = readOLD('116l')
-start[7], deviants, contributors, improvement[7], weights[7] = readOLD('117l')
-start[8], deviants, contributors, improvement[8], weights[8] = readOLD('118l')
-start[9], deviants, contributors, improvement[9], weights[9] = readOLD('119l')
+        plt.plot(np.arange(rounds + 1), avg_tr, 'r', label='Train')
+        plt.plot(np.arange(rounds + 1), avg_te, 'b', label='Test')
 
-accuracy = [np.mean(start)]
-for i in range(1, Niteration+1):
-    accuracy.append(accuracy[i-1]+np.mean(improvement, axis=0)[i-1])
+    plt.legend()
+    plt.title(model + '_' + data + '_' + str(participants))
+    plt.xlabel('Rounds')
+    plt.ylabel('Accuracy')
+    plt.savefig(path + 'accuracy.png')
+    plt.show()
+    plt.close()
 
-print(accuracy, np.mean(weights, axis=0))
+
+def weight_diff(model, data, participants, noise_type, noise_size, weights, rounds, instance_num):
+
+    test = np.zeros((len(weights), instance_num, rounds + 1))
+    bl = np.zeros((instance_num, rounds + 1))
+    AVGbl = np.zeros((rounds + 1))
+    AVGtest = np.zeros((len(weights), rounds + 1))
+    color = ['r', 'b', 'y']
+    path0 = '../save/' + model + '_' + data + '_' + str(participants) + '/'
+
+    for w in np.arange(len(weights)):
+        path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weights[w]) + '/'
+        pathBL = '../save/' + model + '_' + data + '_' + str(participants) + '/no_0.0_0.0/'
+        for i in np.arange(instance_num):
+            test[w][i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/test.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
+            bl[i] = np.cumsum(np.insert(np.load(pathBL + str(i + 1) + '/test.npy'), 0, np.load(pathBL + str(i + 1) + '/start.npy')))
+
+        AVGtest[w] = np.average(test[w], axis=0)
+        AVGbl = np.average(bl, axis=0)
+        plt.plot(np.arange(rounds + 1), AVGtest[w], color[w], label='Weight=' + str(weights[w]))
+
+    plt.plot(np.arange(rounds + 1), AVGbl, 'g', label='No Noise')
+
+    plt.legend()
+    plt.title(model + '_' + data + '_' + str(participants))
+    plt.xlabel('Rounds')
+    plt.ylabel('Accuracy')
+    plt.savefig(path0 + 'weight.png')
+    plt.show()
+    plt.close()
+
+
+#create_fig('mlp', 'mnist', 5, 'linear', 1.0, 0.1, 100, 9)
+#create_fig('mlp', 'cifar', 5, 'linear', 1.0, 0.1, 100, 9)
+#create_fig('cnn', 'mnist', 5, 'linear', 1.0, 0.1, 100, 9)
+#create_fig('cnn', 'cifar', 5, 'linear', 1.0, 0.1, 100, 9)
+
+weight_diff('mlp', 'mnist', 5, 'linear', 1.0, [0.0, 0.05], 100, 9)
+weight_diff('mlp', 'cifar', 5, 'linear', 1.0, [0.0, 0.05], 100, 9)
+weight_diff('cnn', 'mnist', 5, 'linear', 1.0, [0.0, 0.05], 100, 9)
+weight_diff('cnn', 'cifar', 5, 'linear', 1.0, [0.0, 0.05], 100, 9)
