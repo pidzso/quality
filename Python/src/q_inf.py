@@ -99,12 +99,12 @@ def readOLD(instance):
 # NEW version of reading the result file
 def readNEW(instance):
     start = np.load('../save/' + instance + '/' + 'start.npy')
-    deviant = np.load('../save/' + instance + '/' + 'deviant.npy')
+    #deviant = np.load('../save/' + instance + '/' + 'deviant.npy')
     weight = np.load('../save/' + instance + '/' + 'weight.npy')
-    contributor = np.load('../save/' + instance + '/' + 'contributor.npy')
+    contributor = np.load('../save/' + instance + '/' + 'contributor.npy').astype(int)
     test_imp = np.load('../save/' + instance + '/' + 'test.npy')
     train_imp = np.load('../save/' + instance + '/' + 'train.npy')
-    return start, deviant, weight, contributor, test_imp, train_imp
+    return start, weight, contributor, test_imp, train_imp
 
 
 # looking for the deviants with multiple tests
@@ -113,8 +113,8 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
     # treshold - ignoring changes below
     # option - count or actual
 
-    starting, deviants, contributors, improvements = readOLD(what)
-    score = np.zeros(1 + max([max(sublist) for sublist in contributors]))
+    start, weight, contributors, improvements, train_imp = readNEW(what)
+    score = np.zeros(np.amax(contributors) + 1)
     if 'neg' in how:  # if big negative, than -
         for round in range(ignorefirst, len(improvements) - ignorelast):
             if improvements[round] < -treshold:
@@ -148,10 +148,10 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
                         score[contributors[round][contributor]] = \
                             score[contributors[round][contributor]] + improvements[round] - improvements[round - 1]
 
-    return deviants, score
+    return score
 
 
-# average the experiment results [ONLY FOR BASELINE MAKE SENCE]
+# average the experiment results [ONLY FOR BASELINE MAKE SENSE]
 def aggregate(experiments, ppl, option, ignorefirst, ignorelast, treshold):
     tests = ['neg', 'inc', 'help']
     scores = {'neg': np.zeros(ppl), 'inc': np.zeros(ppl), 'help': np.zeros(ppl)}

@@ -106,7 +106,7 @@ if __name__ == '__main__':
     contributors = np.zeros([args.epochs, int(args.num_users * args.frac)])
     test_improvement = np.zeros(args.epochs)
     train_improvement = np.zeros(args.epochs)
-    weight = np.zeros([args.epochs + 1, args.num_users]) + 1
+    weight = np.ones([args.epochs + 1, args.num_users])
 
     # initial model's accuracy
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
@@ -179,12 +179,12 @@ if __name__ == '__main__':
             weight[epoch + 1] = weight[epoch]
             if test_improvement[epoch] < 0:
                 for contributor in contributors[epoch]:
-                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 - args.weight)
+                    weight[epoch + 1, int(contributor)] = weight[epoch + 1, int(contributor)] * (1 - args.weight)
             if test_improvement[epoch] > test_improvement[epoch - 1]:
                 for contributor in contributors[epoch]:
-                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 + args.weight)
+                    weight[epoch + 1, int(contributor)] = weight[epoch + 1, int(contributor)] * (1 + args.weight)
                 for contributor in contributors[epoch - 1]:
-                    weight[epoch, int(contributor)] = weight[epoch, int(contributor)] * (1 - args.weight)
+                    weight[epoch + 1, int(contributor)] = weight[epoch + 1, int(contributor)] * (1 - args.weight)
 
     # Test inference after completion of training
     test_acc, test_loss = test_inference(args, global_model, test_dataset)
