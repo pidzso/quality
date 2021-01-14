@@ -1,10 +1,10 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from q_inf import test
 from scipy import stats
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
-
 
 def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, rounds, instance_num):
     '''
@@ -38,9 +38,9 @@ def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, 
         plt.plot(np.arange(rounds + 1), avg_te, 'b', label='Test')
         plt.legend()
 
-    plt.title(model + '_' + data + '_' + str(participants))
-    plt.xlabel('Rounds')
-    plt.ylabel('Accuracy')
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Accuracy', fontsize=20)
     plt.savefig(path + 'accuracy.png')
     plt.close()
 
@@ -63,12 +63,28 @@ def weight_diff(model, data, participants, noise_type, noise_size, weights, roun
         AVGtest[w] = np.average(test[w], axis=0)
         plt.plot(np.arange(rounds + 1), AVGtest[w], color[w], label='Weight=' + str(weights[w]))
 
-    plt.legend()
-    plt.title(model + '_' + data + '_' + str(participants))
-    plt.xlabel('Rounds')
-    plt.ylabel('Accuracy')
-    plt.savefig(path0 + 'weight.png')
+    plt.legend(fontsize=20)
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Accuracy', fontsize=20)
+    plt.savefig('../save/weight_' + model[0] + data[0] + str(participants) + '.png')
     plt.close()
+
+
+weight_diff('mlp', 'mnist', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('mlp', 'cifar', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('cnn', 'mnist', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('cnn', 'cifar', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+
+weight_diff('mlp', 'mnist', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('mlp', 'cifar', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('cnn', 'mnist', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+weight_diff('cnn', 'cifar', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
+
+weight_diff('mlp', 'mnist', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
+weight_diff('mlp', 'cifar', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
+weight_diff('cnn', 'mnist', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
+weight_diff('cnn', 'cifar', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
 
 
 def weight_change(model, data, participants, noise_type, noise_size, weight, rounds, instance):
@@ -85,9 +101,9 @@ def weight_change(model, data, participants, noise_type, noise_size, weight, rou
     for i in np.arange(participants):
         plt.plot(np.arange(rounds + 1), AVGtest[i], color=str(i / participants))
 
-    plt.title(model + '_' + data + '_' + str(participants))
-    plt.xlabel('Rounds')
-    plt.ylabel('Weights')
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Weights', fontsize=20)
     plt.savefig(path + 'change.png')
     plt.close()
 
@@ -108,10 +124,10 @@ def score_change(model, data, participants, noise_type, noise_size, rounds, inst
     for i in np.arange(participants):
         plt.plot(np.arange(rounds), AVGscores[i], color=str(i / participants))
 
-    plt.title(model + '_' + data + '_' + str(participants))
-    plt.xlabel('Rounds')
-    plt.ylabel('Scores')
-    plt.savefig(path + 'change_score.png')
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Scores', fontsize=20)
+    plt.savefig('../save/change_score_' + model[0] + data[0] + str(participants) + '.png')
     plt.close()
 
 
@@ -135,14 +151,14 @@ def score(model, data, participants, instance):
     plt.errorbar(np.arange(participants), means, std, fmt='ok', lw=3)
     plt.errorbar(np.arange(participants), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
     plt.xlim(-1, participants)
-    plt.title(model + '_' + data + '_score')
-    plt.xlabel('Participant')
-    plt.ylabel('Score')
-    plt.savefig(path0 + 'score.png')
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Participant', fontsize=20)
+    plt.ylabel('Score', fontsize=20)
+    plt.savefig('../save/score_' + model[0] + data[0] + str(participants) + '.png')
     plt.close()
 
 
-def order(model, data, participants, instance, ignorefirst, ignorelast, treshold, type):
+def order(model, data, participants, instance, ignorefirst, ignorelast, treshold, type, tests):
     '''
     calculates the quality inference's accuracy instance-wise
     '''
@@ -152,14 +168,14 @@ def order(model, data, participants, instance, ignorefirst, ignorelast, treshold
     path0 = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
 
     for i in np.arange(instance):
-        scores[i] = test(path0 + str(i + 1), ['neg', 'inc', 'help'], type, ignorefirst, ignorelast, treshold)
+        scores[i] = test(path0 + str(i + 1), tests, type, ignorefirst, ignorelast, treshold)
         sp[i] = stats.spearmanr(np.arange(participants), scores[i])[0]
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html
 
     return sp
 
 
-def find_opt(model, data, participants, instance):
+def find_opt(model, data, participants, instance, tests):
     '''
     finds the optimal parameters to maximize the average score
     '''
@@ -170,90 +186,123 @@ def find_opt(model, data, participants, instance):
     for ty in ['count', 'value']:
         for ig in ignorefirst:
             for th in treshold:
-                if np.mean(order(model, data, participants, instance, best[0], 0, best[1], best[2])) < np.mean(order(model, data, participants, instance, ig, 0, th, ty)):
+                if np.mean(order(model, data, participants, instance, best[0], 0, best[1], best[2], tests)) < np.mean(order(model, data, participants, instance, ig, 0, th, ty)):
                     best = [ig, th, ty]
     return best
 
 
-def order_show(what, opt):
+def order_show(participants):
     '''
     creates boxplot of experiment-wise quality inference accuracies
     with default parameters / with default and optimal parameters
     '''
 
-    mm5 = order('mlp', 'mnist', 5, 9, 0, 0, 0, 'count')
-    mm25 = order('mlp', 'mnist', 25, 9, 0, 0, 0, 'count')
-    mm100 = order('mlp', 'mnist', 100, 3, 0, 0, 0, 'count')
-    mc5 = order('mlp', 'cifar', 5, 9, 0, 0, 0, 'count')
-    mc25 = order('mlp', 'cifar', 25, 9, 0, 0, 0, 'count')
-    mc100 = order('mlp', 'cifar', 100, 3, 0, 0, 0, 'count')
-    cm5 = order('cnn', 'mnist', 5, 9, 0, 0, 0, 'count')
-    cm25 = order('cnn', 'mnist', 25, 9, 0, 0, 0, 'count')
-    cm100 = order('cnn', 'mnist', 100, 3, 0, 0, 0, 'count')
-    cc5 = order('cnn', 'cifar', 5, 9, 0, 0, 0, 'count')
-    cc25 = order('cnn', 'cifar', 25, 9, 0, 0, 0, 'count')
-    cc100 = order('cnn', 'cifar', 100, 3, 0, 0, 0, 'count')
+    mins = {}
+    maxes = {}
+    means = {}
+    std = {}
 
-    opt_mm5 = order('mlp', 'mnist', 5, 9, 1, 0, 0.16, 'count')
-    opt_mm25 = order('mlp', 'mnist', 25, 9, 0, 0, 0.16, 'count')
-    opt_mm100 = order('mlp', 'mnist', 100, 3, 1, 0, 0.32, 'count')
-    opt_mc5 = order('mlp', 'cifar', 5, 9, 0, 0, 0.02, 'count')
-    opt_mc25 = order('mlp', 'cifar', 25, 9, 2, 0, 0.16, 'count')
-    opt_mc100 = order('mlp', 'cifar', 100, 3, 6, 0, 0.08, 'count')
-    opt_cm5 = order('cnn', 'mnist', 5, 9, 0, 0, 1.28, 'count')
-    opt_cm25 = order('cnn', 'mnist', 25, 9, 8, 0, 0.32, 'count')
-    opt_cm100 = order('cnn', 'mnist', 100, 3, 9, 0, 0.16, 'count')
-    opt_cc5 = order('cnn', 'cifar', 5, 9, 0, 0, 0.08, 'count')
-    opt_cc25 = order('cnn', 'cifar', 25, 9, 2, 0, 0.64, 'count')
-    opt_cc100 = order('cnn', 'cifar', 100, 3, 4, 0, 1.28, 'count')
+    OPTmins = {}
+    OPTmaxes = {}
+    OPTmeans = {}
+    OPTstd = {}
 
-    #opt2_mc5 = order('mlp', 'cifar', 5, 9, 1, 0, 0, 'value')
-    #opt2_cm5 = order('cnn', 'mnist', 5, 9, 1, 0, 0, 'value')
-    #opt2_mm25 = order('mlp', 'mnist', 25, 9, 1, 0, 0.01, 'value')
+    tests = [['help', 'inc', 'neg']]#, ['help', 'inc'], ['help', 'neg'],['inc', 'neg'], ['help'], ['inc'], ['neg']]
 
-    if opt == 1:
-        l = 8
-        mins =  {'5': np.min([mm5, opt_mm5, mc5, opt_mc5, cm5, opt_cm5, cc5, opt_cc5], axis=1),
-                 '25': np.min([mm25, opt_mm25, mc25, opt_mc25, cm25, opt_cm25, cc25, opt_cc25], axis=1),
-                 '100': np.min([mm100, opt_mm100, mc100, opt_mc100, cm100, opt_cm100, cc100, opt_cc100], axis=1)}
-        maxes = {'5': np.max([mm5, opt_mm5, mc5, opt_mc5, cm5, opt_cm5, cc5, opt_cc5], axis=1),
-                 '25': np.max([mm25, opt_mm25, mc25, opt_mc25, cm25, opt_cm25, cc25, opt_cc25], axis=1),
-                 '100': np.max([mm100, opt_mm100, mc100, opt_mc100, cm100, opt_cm100, cc100, opt_cc100], axis=1)}
-        means = {'5': np.mean([mm5, opt_mm5, mc5, opt_mc5, cm5, opt_cm5, cc5, opt_cc5], axis=1),
-                 '25': np.mean([mm25, opt_mm25, mc25, opt_mc25, cm25, opt_cm25, cc25, opt_cc25], axis=1),
-                 '100': np.mean([mm100, opt_mm100, mc100, opt_mc100, cm100, opt_cm100, cc100, opt_cc100], axis=1)}
-        std =   {'5': np.std([mm5, opt_mm5, mc5, opt_mc5, cm5, opt_cm5, cc5, opt_cc5], axis=1),
-                 '25': np.std([mm25, opt_mm25, mc25, opt_mc25, cm25, opt_cm25, cc25, opt_cc25], axis=1),
-                 '100': np.std([mm100, opt_mm100, mc100, opt_mc100, cm100, opt_cm100, cc100, opt_cc100], axis=1)}
-    else:
-        l = 4
-        mins =  {'5': np.min([mm5, mc5, cm5, cc5], axis=1),
-                 '25': np.min([mm25, mc25, cm25, cc25], axis=1),
-                 '100': np.min([mm100, mc100, cm100, cc100], axis=1)}
-        maxes = {'5': np.max([mm5, mc5, cm5, cc5], axis=1),
-                 '25': np.max([mm25, mc25, cm25, cc25], axis=1),
-                 '100': np.max([mm100, mc100, cm100, cc100], axis=1)}
-        means = {'5': np.mean([mm5, mc5, cm5, cc5], axis=1),
-                 '25': np.mean([mm25, mc25, cm25, cc25], axis=1),
-                 '100': np.mean([mm100, mc100, cm100, cc100], axis=1)}
-        std =   {'5': np.std([mm5, mc5, cm5, cc5], axis=1),
-                 '25': np.std([mm25, mc25, cm25, cc25], axis=1),
-                 '100': np.std([mm100, mc100, cm100, cc100], axis=1)}
+    for i in np.arange(len(tests)):
+        mm5   = order('mlp', 'mnist', 5, 9, 0, 0, 0, 'count', tests[i])
+        mm25  = order('mlp', 'mnist', 25, 9, 0, 0, 0, 'count', tests[i])
+        mm100 = order('mlp', 'mnist', 100, 3, 0, 0, 0, 'count', tests[i])
+        mc5   = order('mlp', 'cifar', 5, 9, 0, 0, 0, 'count', tests[i])
+        mc25  = order('mlp', 'cifar', 25, 9, 0, 0, 0, 'count', tests[i])
+        mc100 = order('mlp', 'cifar', 100, 3, 0, 0, 0, 'count', tests[i])
+        cm5   = order('cnn', 'mnist', 5, 9, 0, 0, 0, 'count', tests[i])
+        cm25  = order('cnn', 'mnist', 25, 9, 0, 0, 0, 'count', tests[i])
+        cm100 = order('cnn', 'mnist', 100, 3, 0, 0, 0, 'count', tests[i])
+        cc5   = order('cnn', 'cifar', 5, 9, 0, 0, 0, 'count', tests[i])
+        cc25  = order('cnn', 'cifar', 25, 9, 0, 0, 0, 'count', tests[i])
+        cc100 = order('cnn', 'cifar', 100, 3, 0, 0, 0, 'count', tests[i])
 
-    for par in what:
+        OPTmm5   = order('mlp', 'mnist', 5, 9, 1, 0, 0.16, 'count', tests[i])
+        OPTmm25  = order('mlp', 'mnist', 25, 9, 1, 0, 0.01, 'value', tests[i])
+        OPTmm100 = order('mlp', 'mnist', 100, 3, 1, 0, 0.32, 'count', tests[i])
+        OPTmc5   = order('mlp', 'cifar', 5, 9, 1, 0, 0, 'value', tests[i])
+        OPTmc25  = order('mlp', 'cifar', 25, 9, 2, 0, 0.16, 'count', tests[i])
+        OPTmc100 = order('mlp', 'cifar', 100, 3, 6, 0, 0.08, 'count', tests[i])
+        OPTcm5   = order('cnn', 'mnist', 5, 9, 1, 0, 0, 'value', tests[i])
+        OPTcm25  = order('cnn', 'mnist', 25, 9, 8, 0, 0.32, 'count', tests[i])
+        OPTcm100 = order('cnn', 'mnist', 100, 3, 9, 0, 0.16, 'count', tests[i])
+        OPTcc5   = order('cnn', 'cifar', 5, 9, 0, 0, 0.08, 'count', tests[i])
+        OPTcc25  = order('cnn', 'cifar', 25, 9, 2, 0, 0.64, 'count', tests[i])
+        OPTcc100 = order('cnn', 'cifar', 100, 3, 4, 0, 1.28, 'count', tests[i])
+
+        mins['5' + str(i)]    = np.min([mm5, mc5, cm5, cc5], axis=1)
+        mins['25' + str(i)]   = np.min([mm25, mc25, cm25, cc25], axis=1)
+        mins['100' + str(i)]  = np.min([mm100, mc100, cm100, cc100], axis=1)
+        maxes['5' + str(i)]   = np.max([mm5, mc5, cm5, cc5], axis=1)
+        maxes['25' + str(i)]  = np.max([mm25, mc25, cm25, cc25], axis=1)
+        maxes['100' + str(i)] =  np.max([mm100, mc100, cm100, cc100], axis=1)
+        means['5' + str(i)]   = np.mean([mm5, mc5, cm5, cc5], axis=1)
+        means['25' + str(i)]  = np.mean([mm25, mc25, cm25, cc25], axis=1)
+        means['100' + str(i)] = np.mean([mm100, mc100, cm100, cc100], axis=1)
+        std['5' + str(i)]     = np.std([mm5, mc5, cm5, cc5], axis=1)
+        std['25' + str(i)]    = np.std([mm25, mc25, cm25, cc25], axis=1)
+        std['100' + str(i)]   = np.std([mm100, mc100, cm100, cc100], axis=1)
+
+        OPTmins['5' + str(i)]    = np.min( [mm5,   OPTmm5,   mc5,   OPTmc5,   cm5,   OPTcm5,   cc5,   OPTcc5],   axis=1)
+        OPTmins['25' + str(i)]   = np.min( [mm25,  OPTmm25,  mc25,  OPTmc25,  cm25,  OPTcm25,  cc25,  OPTcc25],  axis=1)
+        OPTmins['100' + str(i)]  = np.min( [mm100, OPTmm100, mc100, OPTmc100, cm100, OPTcm100, cc100, OPTcc100], axis=1)
+        OPTmaxes['5' + str(i)]   = np.max( [mm5,   OPTmm5,   mc5,   OPTmc5,   cm5,   OPTcm5,   cc5,   OPTcc5],   axis=1)
+        OPTmaxes['25' + str(i)]  = np.max( [mm25,  OPTmm25,  mc25,  OPTmc25,  cm25,  OPTcm25,  cc25,  OPTcc25],  axis=1)
+        OPTmaxes['100' + str(i)] =  np.max([mm100, OPTmm100, mc100, OPTmc100, cm100, OPTcm100, cc100, OPTcc100], axis=1)
+        OPTmeans['5' + str(i)]   = np.mean([mm5,   OPTmm5,   mc5,   OPTmc5,   cm5,   OPTcm5,   cc5,   OPTcc5],   axis=1)
+        OPTmeans['25' + str(i)]  = np.mean([mm25,  OPTmm25,  mc25,  OPTmc25,  cm25,  OPTcm25,  cc25,  OPTcc25],  axis=1)
+        OPTmeans['100' + str(i)] = np.mean([mm100, OPTmm100, mc100, OPTmc100, cm100, OPTcm100, cc100, OPTcc100], axis=1)
+        OPTstd['5' + str(i)]     = np.std( [mm5,   OPTmm5,   mc5,   OPTmc5,   cm5,   OPTcm5,   cc5,   OPTcc5],   axis=1)
+        OPTstd['25' + str(i)]    = np.std( [mm25,  OPTmm25,  mc25,  OPTmc25,  cm25,  OPTcm25,  cc25,  OPTcc25],  axis=1)
+        OPTstd['100' + str(i)]   = np.std( [mm100, OPTmm100, mc100, OPTmc100, cm100, OPTcm100, cc100, OPTcc100], axis=1)
+
+    for par in participants:
         fig, ax = plt.subplots()
-        plt.errorbar(np.arange(l), means[par], std[par], fmt='ok', lw=3)
-        plt.errorbar(np.arange(l), means[par], [means[par] - mins[par], maxes[par] - means[par]], fmt='.k', ecolor='gray', lw=1)
-        plt.xlim(-1, l)
-        plt.title('Quality Inference')
-        plt.ylabel('QI Accuracy')
-        if opt == 1:
-            ax.set_xticklabels(['', 'mm' + par, 'OPTmm' + par, 'mc' + par, 'OPTmc' + par, 'cm' + par, 'OPTcm' + par, 'cc' + par, 'OPTcc' + par, ''], rotation=45)
-            plt.savefig('../save/qi_' + par + '_opt.png')
-        else:
-            ax.set_xticklabels(['', 'mm' + par, 'mc' + par, 'cm' + par, 'cc' + par, ''], rotation=45)
-            plt.savefig('../save/qi_' + par + '.png')
+        for i in np.arange(len(tests)):
+            plt.errorbar(np.arange(i, 8*len(tests), len(tests)), OPTmeans[par + str(i)], OPTstd[par + str(i)], fmt='ok', lw=3)  #, ecolor=['red', 'green', 'blue', 'brown'])
+            plt.errorbar(np.arange(i, 8*len(tests), len(tests)), OPTmeans[par + str(i)], [OPTmeans[par + str(i)] - OPTmins[par + str(i)], OPTmaxes[par + str(i)] - OPTmeans[par + str(i)]], fmt='.k', lw=1, ecolor='gray')#ecolor=['red', 'green', 'blue', 'brown'])
+        plt.xlim(-1, 8*len(tests))
+        plt.title(par, fontsize=20)
+        plt.ylabel('QI Accuracy', fontsize=20)
+        ax.set_xticklabels(['', 'MM' + par, 'oMM' + par, 'MC' + par, 'oMC' + par, 'CM' + par, 'oCM' + par, 'CC' + par, 'oCC' + par, ''], rotation=90, fontsize=20)
+        plt.savefig('../save/qi_' + par + '_OPT.png')
         plt.close()
+
+
+def compare_order(model, data, participants, instance):
+    '''
+    compare the quality inference's accuracy case-wise
+    '''
+
+    scores = np.zeros((7, instance, participants))
+    sp = np.zeros((7, instance))
+    path0 = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
+    tests = [['neg', 'inc', 'help'], ['inc', 'help'], ['neg', 'help'], ['neg', 'inc'], ['help'], ['inc'], ['neg']]
+    for k in np.arange(7):
+        for i in np.arange(instance):
+            scores[k][i] = test(path0 + str(i + 1), tests[k], 'count', 0, 0, 0)
+            sp[k][i] = stats.spearmanr(np.arange(participants), scores[k][i])[0]
+
+    mins =  np.min(sp, axis=1)
+    maxes = np.max(sp, axis=1)
+    means = np.mean(sp, axis=1)
+    std =   np.std(sp, axis=1)
+
+    fig, ax = plt.subplots()
+    plt.errorbar(np.arange(7), means, std, fmt='ok', lw=3)
+    plt.errorbar(np.arange(7), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
+    plt.xlim(-1, 7)
+    plt.title('Quality Inference', fontsize=20)
+    plt.ylabel('QI Accuracy')
+    ax.set_xticklabels(['', 'NIH', 'IH', 'NH', 'NI', 'H', 'I', 'N', ''], rotation=45)
+    plt.savefig('../save/' + model + '_' + data + '_' + str(participants) + '/QI.png')
+    plt.close()
 
 
 #      neg           inc           help         inchelp       neghelp       neginc        neginchelp
