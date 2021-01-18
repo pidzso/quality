@@ -2,7 +2,7 @@ import numpy as np
 
 
 # OLD version of reading the result file
-def readOLD(instance):
+def readOLD(participants, instance):
     '''
         Starting:
             float
@@ -19,7 +19,15 @@ def readOLD(instance):
     improvements = []
     weights = []
     aux = []
-    with open("../save/result" + instance + ".txt", 'r') as f:
+
+    if participants == '005':
+        par = '5/5_2_1/'
+    elif participants == '025':
+        par = '25/25_5_1/'
+    elif participants == '100':
+        par = '100/100_10_1/'
+
+    with open("../save/" + par + "result" + instance + ".txt", 'r') as f:
         for line in f:
             aux.append(line)
 
@@ -113,7 +121,11 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
     # treshold - ignoring changes below
     # option - count or actual
 
-    start, weight, contributors, improvements, train_imp = readNEW(what)
+    if 'mnist' in what or 'cifar' in what:
+        start, weight, contributors, improvements, train_imp = readNEW(what)
+    else:
+        start, deviants, contributors, improvements, weight = readOLD(what[:3], what[3:])
+
     score = np.zeros(np.amax(contributors) + 1)
     if 'neg' in how:  # if big negative, than -
         for round in range(ignorefirst, len(improvements) - ignorelast):
@@ -149,21 +161,6 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
                             score[contributors[round][contributor]] + improvements[round] - improvements[round - 1]
 
     return score
-
-
-# average the experiment results [ONLY FOR BASELINE MAKE SENSE]
-def aggregate(experiments, ppl, option, ignorefirst, ignorelast, treshold):
-    tests = ['neg', 'inc', 'help']
-    scores = {'neg': np.zeros(ppl), 'inc': np.zeros(ppl), 'help': np.zeros(ppl)}
-    stat = {'neg': [0, 0], 'inc': [0, 0], 'help': [0, 0]}
-
-    for ex in experiments:
-        for t in tests:
-            scores[t] = test(ex, t, option, ignorefirst, ignorelast, treshold)[1]
-            stat[t][0] = stat[t][0] + np.mean(scores[t]) / len(experiments)
-            stat[t][1] = stat[t][1] + np.var(scores[t]) / len(experiments)
-
-    return stat
 
 
 # determine the success rate of identifying the cheater with different test combinations
@@ -207,91 +204,17 @@ def catch(tests, instances, models, Dsets, option, ignorefirst, ignorelast, tres
     return final
 
 
-# determine the highest position of a cheater
-def highest(tests, instances, models, Dsets, option, ignorefirst, ignorelast, treshold):
+# determine the position of the cheater
+def position(tests, models, Dsets, participants, ignorefirst, ignorelast, treshold, option):
 
-    # final[NoiseType][ModelID][DatasetID][TestCase]
-    final = {'a': np.zeros([len(models), len(Dsets), len(tests)]), 'f': np.zeros([len(models), len(Dsets), len(tests)])}
+    # final[NoiseType][ModelID][DatasetID][9]
+    final = {'a': np.zeros([len(models), len(Dsets), 9]), 'f': np.zeros([len(models), len(Dsets), 9])}
 
     for model in range(len(models)):  # 0:mlp, 1:cnn
         for dataset in range(len(Dsets)):  # 0:mnist, 1:cifar
             for type in ['a', 'f']:  # attack/freeride
-                files = [str(model) + str(dataset) + str(instance) + type for instance in range(instances)]
+                files = [participants + str(model) + str(dataset) + str(instance) + type for instance in range(9)]
                 for file in range(len(files)):
-                    for test_iter in range(len(tests)):
-                        dev, score = test(files[file], tests[test_iter], option, ignorefirst, ignorelast, treshold)
-                        aux = score[0]
-                        for dev_iter in dev:
-                            if aux < score[dev_iter]:
-                                aux = score[dev_iter]
-                        score.sort()
-                        final[type][model][dataset] = final[type][model][dataset] + np.max(np.where(score == aux)) / len(files)
-
+                    score = test(files[file], tests, option, ignorefirst, ignorelast, treshold)
+                    final[type][model][dataset][file] = sorted(score).index(score[0])
     return final
-
-
-# determine the average position of the cheaters
-def avg(tests, instances, models, Dsets, option, ignorefirst, ignorelast, treshold):
-
-    # final[NoiseType][ModelID][DatasetID][TestCase]
-    final = {'a': np.zeros([len(models), len(Dsets), len(tests)]), 'f': np.zeros([len(models), len(Dsets), len(tests)])}
-
-    for model in range(len(models)):  # 0:mlp, 1:cnn
-        for dataset in range(len(Dsets)):  # 0:mnist, 1:cifar
-            for type in ['a', 'f']:  # attack/freeride
-                files = [str(model) + str(dataset) + str(instance) + type for instance in range(instances)]
-                for file in range(len(files)):
-                    for test_iter in range(len(tests)):
-                        dev, score = test(files[file], tests[test_iter], option, ignorefirst, ignorelast, treshold)
-                        aux = 0
-                        for dev_iter in dev:
-                            aux = aux + score[dev_iter] / len(dev)
-                        for s in score:
-                            if s <= aux:
-                                final[type][model][dataset] = final[type][model][dataset] + 1 / len(files)
-
-    return final  # remove 1 as it counted the deviant itself
-
-
-# linear case
-def quality_inf(tests, instances, models, Dsets, ppl, option, ignorefirst, ignorelast, treshold):
-
-    # linscore[model][dataset][participant]
-    linscore = np.zeros([len(models), len(Dsets), ppl])
-
-    for model in range(len(models)):  # 0:mlp, 1:cnn
-        for dataset in range(len(Dsets)):  # 0:mnist, 1:cifar
-            files = [str(model) + str(dataset) + str(instance) + 'l' for instance in range(instances)]
-            for file in range(len(files)):
-                for test_iter in range(len(tests)):
-                    linscore[model][dataset] = [linscore[model][dataset][i] +
-                                                test(files[file], tests[test_iter], option, ignorefirst, ignorelast, treshold)[1][i] \
-                                                for i in range(ppl)]
-
-    return linscore
-
-
-# determine the best treshold
-def optimize(test, experiment, models, datasets, participants, option, ignorefirst, ignorelast):
-    badpoint = []
-    tresholds = [0.0, 0.05, 0.10, 0.15, 0.2, 0.25]
-
-    for th in range(len(tresholds)):
-        badpoint.append([0, 0, 0, 0, 0])
-        linscore = quality_inf(test, len(experiment), models, datasets, participants, \
-                               option, ignorefirst, ignorelast, tresholds[th])
-
-        aux0 = np.argsort(linscore[0][0])
-        aux1 = np.argsort(linscore[0][1])
-        aux2 = np.argsort(linscore[1][0])
-        aux3 = np.argsort(linscore[1][1])
-
-        for par in range(participants):
-            badpoint[th][0] = badpoint[th][0] + abs(par - aux0[par])
-            badpoint[th][1] = badpoint[th][1] + abs(par - aux1[par])
-            badpoint[th][2] = badpoint[th][2] + abs(par - aux2[par])
-            badpoint[th][3] = badpoint[th][3] + abs(par - aux3[par])
-            # dataset/model -wise average
-            badpoint[th][4] = np.mean([badpoint[th][ind] for ind in [0, 1, 2, 3]])
-
-    return badpoint

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from q_inf import test
+from q_inf import test, position
 from scipy import stats
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -69,22 +69,6 @@ def weight_diff(model, data, participants, noise_type, noise_size, weights, roun
     plt.ylabel('Accuracy', fontsize=20)
     plt.savefig('../save/weight_' + model[0] + data[0] + str(participants) + '.png')
     plt.close()
-
-
-weight_diff('mlp', 'mnist', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('mlp', 'cifar', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('cnn', 'mnist', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('cnn', 'cifar', 5, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-
-weight_diff('mlp', 'mnist', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('mlp', 'cifar', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('cnn', 'mnist', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-weight_diff('cnn', 'cifar', 25, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 9)
-
-weight_diff('mlp', 'mnist', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
-weight_diff('mlp', 'cifar', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
-weight_diff('cnn', 'mnist', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
-weight_diff('cnn', 'cifar', 100, 'linear', 1.0, [0.0, 0.05, 0.10, 0.20], 100, 3)
 
 
 def weight_change(model, data, participants, noise_type, noise_size, weight, rounds, instance):
@@ -173,6 +157,34 @@ def order(model, data, participants, instance, ignorefirst, ignorelast, treshold
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html
 
     return sp
+
+
+def pos(participants):
+    '''
+    shows the positions of cheaters instance-wise for all usecase
+    '''
+
+    p = position(['neg', 'inc', 'help'], ['mlp', 'cnn'], ['mnist', 'cifar'], participants, 0, 0, 0, 'count')
+    mins  = [np.min(p['a'], axis=2).flatten(), np.min(p['f'], axis=2).flatten()]
+    maxes = [np.max(p['a'], axis=2).flatten(), np.max(p['f'], axis=2).flatten()]
+    means = [np.mean(p['a'], axis=2).flatten(), np.mean(p['f'], axis=2).flatten()]
+    std   = [np.std(p['a'], axis=2).flatten(), np.std(p['f'], axis=2).flatten()]
+
+    for i in [0, 1]:
+        if i == 0:
+            s = 'Attacker'
+        elif i == 1:
+            s = 'Freerider'
+        fig, ax = plt.subplots()
+        plt.errorbar(np.arange(4), means[i], std[i], fmt='ok', lw=3)
+        plt.errorbar(np.arange(4), means[i], [means[i] - mins[i], maxes[i] - means[i]], fmt='.k', ecolor='gray', lw=1)
+        plt.xlim(-1, 4)
+        plt.ylim(0, int(participants))
+        plt.title(s + '\'s Position', fontsize=20)
+        plt.ylabel('Position', fontsize=20)
+        ax.set_xticklabels(['', 'MM' + participants, 'MC' + participants, 'CM' + participants, 'CC' + participants, ''], rotation=45, fontsize=20)
+        plt.savefig('../save/' + participants + s + '.png')
+        plt.close()
 
 
 def find_opt(model, data, participants, instance, tests):

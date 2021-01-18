@@ -102,7 +102,6 @@ if __name__ == '__main__':
     val_loss_pre, counter = 0, 0
 
     # contribution measuring variables
-    deviants = []
     contributors = np.zeros([args.epochs, int(args.num_users * args.frac)])
     test_improvement = np.zeros(args.epochs)
     train_improvement = np.zeros(args.epochs)

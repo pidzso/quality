@@ -25,13 +25,13 @@ The default values for various paramters parsed to the experiment are given in `
 * ```--frac:```       Fraction of users to be used for federated updates. Default is 0.4.
 * ```--model:```      Default: 'mlp'. Options: 'mlp', 'cnn'
 * ```--epochs:```     Number of rounds of training.
-* ```--optimizer:```   Default: 'sgd'. Options: 'sgd', 'Adam'
+* ```--optimizer:```  Default: 'sgd'. Options: 'sgd', 'Adam'
 * ```--lr:```         Default: 0.01
-* ```--drop_out:```   Default: 0.5
+* ```--do:```         Default: 0.5
 * ```--norm:```       Default: 'None'. Options: 'batch_norm', 'layer_norm', 'None'
 * ```--weight:```     Weighting of users. Default is no weights, set to 1 for weighting.
 * ```--noise_type:``` Default: 'no', Options: 'linear', 'some', 'attack', 'freeride'
-* ```--noise_size:``` Default: 0. Options: 'linear' (max noise level) 'rest' (num.r of noisy par. with noise 0.5)
+* ```--noise_size:``` Default: 0. Options: 'linear' (max noise level) 'rest' (num. of noisy par. with noise 0.5)
 * ```--gpu:```        Default: None. Options: Specific GPU ID
 * ```--seed:```       Default: 1
 * ```--local_ep:```   Default: 1
