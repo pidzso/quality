@@ -92,7 +92,7 @@ def weight_change(model, data, participants, noise_type, noise_size, weight, rou
     plt.close()
 
 
-def score_change(model, data, participants, noise_type, noise_size, rounds, instance):
+def score_change(model, data, participants, rounds, instance):
     '''
     creates round-wise the participants' score changes
     '''
@@ -179,7 +179,7 @@ def pos(participants):
         plt.errorbar(np.arange(4), means[i], std[i], fmt='ok', lw=3)
         plt.errorbar(np.arange(4), means[i], [means[i] - mins[i], maxes[i] - means[i]], fmt='.k', ecolor='gray', lw=1)
         plt.xlim(-1, 4)
-        plt.ylim(0, int(participants))
+        plt.ylim(0, int(participants) - 1)
         plt.title(s + '\'s Position', fontsize=20)
         plt.ylabel('Position', fontsize=20)
         ax.set_xticklabels(['', 'MM' + participants, 'MC' + participants, 'CM' + participants, 'CC' + participants, ''], rotation=45, fontsize=20)
@@ -198,7 +198,7 @@ def find_opt(model, data, participants, instance, tests):
     for ty in ['count', 'value']:
         for ig in ignorefirst:
             for th in treshold:
-                if np.mean(order(model, data, participants, instance, best[0], 0, best[1], best[2], tests)) < np.mean(order(model, data, participants, instance, ig, 0, th, ty)):
+                if np.mean(order(model, data, participants, instance, best[0], 0, best[1], best[2], tests)) < np.mean(order(model, data, participants, instance, ig, 0, th, ty, tests)):
                     best = [ig, th, ty]
     return best
 
@@ -219,34 +219,34 @@ def order_show(participants):
     OPTmeans = {}
     OPTstd = {}
 
-    tests = [['help', 'inc', 'neg']]#, ['help', 'inc'], ['help', 'neg'],['inc', 'neg'], ['help'], ['inc'], ['neg']]
+    tests = [['help', 'inc', 'neg']]  #, ['help', 'inc'], ['help', 'neg'],['inc', 'neg'], ['help'], ['inc'], ['neg']]
 
     for i in np.arange(len(tests)):
         mm5   = order('mlp', 'mnist', 5, 9, 0, 0, 0, 'count', tests[i])
         mm25  = order('mlp', 'mnist', 25, 9, 0, 0, 0, 'count', tests[i])
-        mm100 = order('mlp', 'mnist', 100, 3, 0, 0, 0, 'count', tests[i])
+        mm100 = order('mlp', 'mnist', 100, 9, 0, 0, 0, 'count', tests[i])
         mc5   = order('mlp', 'cifar', 5, 9, 0, 0, 0, 'count', tests[i])
         mc25  = order('mlp', 'cifar', 25, 9, 0, 0, 0, 'count', tests[i])
-        mc100 = order('mlp', 'cifar', 100, 3, 0, 0, 0, 'count', tests[i])
+        mc100 = order('mlp', 'cifar', 100, 9, 0, 0, 0, 'count', tests[i])
         cm5   = order('cnn', 'mnist', 5, 9, 0, 0, 0, 'count', tests[i])
         cm25  = order('cnn', 'mnist', 25, 9, 0, 0, 0, 'count', tests[i])
-        cm100 = order('cnn', 'mnist', 100, 3, 0, 0, 0, 'count', tests[i])
+        cm100 = order('cnn', 'mnist', 100, 9, 0, 0, 0, 'count', tests[i])
         cc5   = order('cnn', 'cifar', 5, 9, 0, 0, 0, 'count', tests[i])
         cc25  = order('cnn', 'cifar', 25, 9, 0, 0, 0, 'count', tests[i])
-        cc100 = order('cnn', 'cifar', 100, 3, 0, 0, 0, 'count', tests[i])
+        cc100 = order('cnn', 'cifar', 100, 9, 0, 0, 0, 'count', tests[i])
 
         OPTmm5   = order('mlp', 'mnist', 5, 9, 1, 0, 0.16, 'count', tests[i])
         OPTmm25  = order('mlp', 'mnist', 25, 9, 1, 0, 0.01, 'value', tests[i])
-        OPTmm100 = order('mlp', 'mnist', 100, 3, 1, 0, 0.32, 'count', tests[i])
+        OPTmm100 = order('mlp', 'mnist', 100, 9, 1, 0, 0.04, 'value', tests[i])
         OPTmc5   = order('mlp', 'cifar', 5, 9, 1, 0, 0, 'value', tests[i])
         OPTmc25  = order('mlp', 'cifar', 25, 9, 2, 0, 0.16, 'count', tests[i])
-        OPTmc100 = order('mlp', 'cifar', 100, 3, 6, 0, 0.08, 'count', tests[i])
+        OPTmc100 = order('mlp', 'cifar', 100, 9, 1, 0, 0.04, 'value', tests[i])
         OPTcm5   = order('cnn', 'mnist', 5, 9, 1, 0, 0, 'value', tests[i])
         OPTcm25  = order('cnn', 'mnist', 25, 9, 8, 0, 0.32, 'count', tests[i])
-        OPTcm100 = order('cnn', 'mnist', 100, 3, 9, 0, 0.16, 'count', tests[i])
+        OPTcm100 = order('cnn', 'mnist', 100, 9, 0, 0, 0.16, 'count', tests[i])
         OPTcc5   = order('cnn', 'cifar', 5, 9, 0, 0, 0.08, 'count', tests[i])
         OPTcc25  = order('cnn', 'cifar', 25, 9, 2, 0, 0.64, 'count', tests[i])
-        OPTcc100 = order('cnn', 'cifar', 100, 3, 4, 0, 1.28, 'count', tests[i])
+        OPTcc100 = order('cnn', 'cifar', 100, 9, 7, 0, 0.32, 'count', tests[i])
 
         mins['5' + str(i)]    = np.min([mm5, mc5, cm5, cc5], axis=1)
         mins['25' + str(i)]   = np.min([mm25, mc25, cm25, cc25], axis=1)
@@ -277,13 +277,14 @@ def order_show(participants):
     for par in participants:
         fig, ax = plt.subplots()
         for i in np.arange(len(tests)):
-            plt.errorbar(np.arange(i, 8*len(tests), len(tests)), OPTmeans[par + str(i)], OPTstd[par + str(i)], fmt='ok', lw=3)  #, ecolor=['red', 'green', 'blue', 'brown'])
-            plt.errorbar(np.arange(i, 8*len(tests), len(tests)), OPTmeans[par + str(i)], [OPTmeans[par + str(i)] - OPTmins[par + str(i)], OPTmaxes[par + str(i)] - OPTmeans[par + str(i)]], fmt='.k', lw=1, ecolor='gray')#ecolor=['red', 'green', 'blue', 'brown'])
-        plt.xlim(-1, 8*len(tests))
+            plt.errorbar(np.arange(i, 4*len(tests), len(tests)), means[par + str(i)], std[par + str(i)], fmt='ok', lw=3) #, ecolor=['red', 'green', 'blue', 'brown'])
+            plt.errorbar(np.arange(i, 4*len(tests), len(tests)), means[par + str(i)], [means[par + str(i)] - mins[par + str(i)], maxes[par + str(i)] - means[par + str(i)]], fmt='.k', lw=1, ecolor='gray')  #ecolor=['red', 'green', 'blue', 'brown'])
+        plt.xlim(-1, 4*len(tests))
+        plt.ylim(0, 1)
         plt.title(par, fontsize=20)
         plt.ylabel('QI Accuracy', fontsize=20)
-        ax.set_xticklabels(['', 'MM' + par, 'oMM' + par, 'MC' + par, 'oMC' + par, 'CM' + par, 'oCM' + par, 'CC' + par, 'oCC' + par, ''], rotation=90, fontsize=20)
-        plt.savefig('../save/qi_' + par + '_OPT.png')
+        ax.set_xticklabels(['', 'MM' + par, 'MC' + par, 'CM' + par, 'CC' + par, ''], rotation=90, fontsize=20)
+        plt.savefig('../save/qi_' + par + '.png')
         plt.close()
 
 
@@ -310,6 +311,7 @@ def compare_order(model, data, participants, instance):
     plt.errorbar(np.arange(7), means, std, fmt='ok', lw=3)
     plt.errorbar(np.arange(7), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
     plt.xlim(-1, 7)
+    plt.ylim(0, 1)
     plt.title('Quality Inference', fontsize=20)
     plt.ylabel('QI Accuracy')
     ax.set_xticklabels(['', 'NIH', 'IH', 'NH', 'NI', 'H', 'I', 'N', ''], rotation=45)
@@ -326,21 +328,21 @@ def compare_order(model, data, participants, instance):
 #mc25  ig=2 th=.16   ig=4 th=.32   ig=0 th=.08  ig=2 th=.16   ig=0 th=.16   ig=4 th=.16   ig=2 th=.16
 #cm25  ig=4 th=.32   ig=0 th=.64   ig=10 th=0   ig=7 th=.32   ig=7 th=.02   ig=0 th=.64   ig=8 th=.32
 #cc25  ig=7 th=.16   ig=4 th=.64   ig=4 th=.08  ig=4 th=.64   ig=4 th=.08   ig=4 th=.64   ig=2 th=.64
-#mm100 ig=0 th=0     ig=0 th=.32   ig=8 th=.32  ig=1 th=.32   ig=1 th=.32   ig=0 th=.04   ig=1 th=.32
-#mc100 ig=5 th=.01   ig=3 th=.16   ig=8 th=.04  ig=6 th=.08   ig=8 th=.01   ig=3 th=.08   ig=6 th=.08
-#cm100 ig=0 th=.16   ig=9 th=.32   ig=0 th=.02  ig=9 th=.16   ig=8 th=.16   ig=9 th=.32   ig=9 th=.16
-#cc100 ig=8 th=.64   ig=2 th=1.28  ig=6 th=.32  ig=7 th=0     ig=7 th=.04   ig=3 th=1.28  ig=4 th=1.28
+#mm100 ig=0 th=0     ig=0 th=.32   ig=8 th=.32  ig=1 th=.32   ig=1 th=.32   ig=0 th=.04   ig=1 th=0
+#mc100 ig=5 th=.01   ig=3 th=.16   ig=8 th=.04  ig=6 th=.08   ig=8 th=.01   ig=3 th=.08   ig=6 th=.64
+#cm100 ig=0 th=.16   ig=9 th=.32   ig=0 th=.02  ig=9 th=.16   ig=8 th=.16   ig=9 th=.32   ig=0 th=.16
+#cc100 ig=8 th=.64   ig=2 th=1.28  ig=6 th=.32  ig=7 th=0     ig=7 th=.04   ig=3 th=1.28  ig=7 th=0.32
 
 #VALUE  neg           inc           inchelp      neginc       neginchelp
 #mc5    ig=0 th=.64  ig=0 th=.64   ig=1 th=0    ig=0 th=.64   ig=1 th=0
 #cm5    ig=0 th=0    ig=0 th=0                  ig=0 th=0     ig=1 th=0
 #cc5    ig=0 th=0    ig=2 th=2.56               ig=0 th=2.56
-#mm25   ig=0 th=.08                             ig=0 th=.08  ig=1 th=.01
+#mm25   ig=0 th=.08                             ig=0 th=.08   ig=1 th=.01
 #mc25   ig=2 th=.04  ig=6 th=.04                ig=5 th=0
 #cm25   ig=8 th=.16  ig=9 th=.32   ig=7 th=.02  ig=8 th=.08
 #cc25   ig=0 th=.08  ig=10 th=.16               ig=2 th=.08
-#mm100               ig=0 th=0
-#mc100               ig=5 th=.16
+#mm100               ig=0 th=0                               ig=1 th=.04
+#mc100               ig=5 th=.16                             ig=6 th=.04
 #cm100               ig=9 th=.32
 #cc100               ig=2 th=1.28
 
