@@ -102,7 +102,7 @@ def score_change(model, data, participants, rounds, instance):
     path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
     for i in np.arange(instance):
         for r in np.arange(rounds):
-            scores[r][i] = test(path + str(i + 1), ['neg', 'inc', 'help'], 'count', 0, 99 - r, 0)
+            scores[r][i] = test(path + str(i + 1), ['neg', 'inc', 'help'], 'count', 0, round - 1 - r, 0)
 
     AVGscores = np.transpose(np.average(scores, axis=1))
     for i in np.arange(participants):
@@ -219,7 +219,7 @@ def order_show(participants):
     OPTmeans = {}
     OPTstd = {}
 
-    tests = [['help', 'inc', 'neg']]  #, ['help', 'inc'], ['help', 'neg'],['inc', 'neg'], ['help'], ['inc'], ['neg']]
+    tests = [['help', 'inc', 'neg']]#, ['help', 'inc'], ['help', 'neg'],['inc', 'neg'], ['help'], ['inc'], ['neg']]
 
     for i in np.arange(len(tests)):
         mm5   = order('mlp', 'mnist', 5, 9, 0, 0, 0, 'count', tests[i])
@@ -253,7 +253,7 @@ def order_show(participants):
         mins['100' + str(i)]  = np.min([mm100, mc100, cm100, cc100], axis=1)
         maxes['5' + str(i)]   = np.max([mm5, mc5, cm5, cc5], axis=1)
         maxes['25' + str(i)]  = np.max([mm25, mc25, cm25, cc25], axis=1)
-        maxes['100' + str(i)] =  np.max([mm100, mc100, cm100, cc100], axis=1)
+        maxes['100' + str(i)] = np.max([mm100, mc100, cm100, cc100], axis=1)
         means['5' + str(i)]   = np.mean([mm5, mc5, cm5, cc5], axis=1)
         means['25' + str(i)]  = np.mean([mm25, mc25, cm25, cc25], axis=1)
         means['100' + str(i)] = np.mean([mm100, mc100, cm100, cc100], axis=1)
@@ -274,6 +274,22 @@ def order_show(participants):
         OPTstd['25' + str(i)]    = np.std( [mm25,  OPTmm25,  mc25,  OPTmc25,  cm25,  OPTcm25,  cc25,  OPTcc25],  axis=1)
         OPTstd['100' + str(i)]   = np.std( [mm100, OPTmm100, mc100, OPTmc100, cm100, OPTcm100, cc100, OPTcc100], axis=1)
 
+    # mean and variance of scoring rules among each other
+    #print(np.argsort([means['50'][0], means['51'][0], means['52'][0], means['53'][0], means['54'][0], means['55'][0], means['56'][0]]))
+    #print(np.argsort([means['50'][1], means['51'][1], means['52'][1], means['53'][1], means['54'][1], means['55'][1], means['56'][1]]))
+    #print(np.argsort([means['50'][2], means['51'][2], means['52'][2], means['53'][2], means['54'][2], means['55'][2], means['56'][2]]))
+    #print(np.argsort([means['50'][3], means['51'][3], means['52'][3], means['53'][3], means['54'][3], means['55'][3], means['56'][3]]))
+
+    #print(np.argsort([means['250'][0], means['251'][0], means['252'][0], means['253'][0], means['254'][0], means['255'][0], means['256'][0]]))
+    #print(np.argsort([means['250'][1], means['251'][1], means['252'][1], means['253'][1], means['254'][1], means['255'][1], means['256'][1]]))
+    #print(np.argsort([means['250'][2], means['251'][2], means['252'][2], means['253'][2], means['254'][2], means['255'][2], means['256'][2]]))
+    #print(np.argsort([means['250'][3], means['251'][3], means['252'][3], means['253'][3], means['254'][3], means['255'][3], means['256'][3]]))
+
+    #print(np.argsort([means['1000'][0], means['1001'][0], means['1002'][0], means['1003'][0], means['1004'][0], means['1005'][0], means['1006'][0]]))
+    #print(np.argsort([means['1000'][1], means['1001'][1], means['1002'][1], means['1003'][1], means['1004'][1], means['1005'][1], means['1006'][1]]))
+    #print(np.argsort([means['1000'][2], means['1001'][2], means['1002'][2], means['1003'][2], means['1004'][2], means['1005'][2], means['1006'][2]]))
+    #print(np.argsort([means['1000'][3], means['1001'][3], means['1002'][3], means['1003'][3], means['1004'][3], means['1005'][3], means['1006'][3]]))
+
     for par in participants:
         fig, ax = plt.subplots()
         for i in np.arange(len(tests)):
@@ -283,7 +299,7 @@ def order_show(participants):
         plt.ylim(0, 1)
         plt.title(par, fontsize=20)
         plt.ylabel('QI Accuracy', fontsize=20)
-        ax.set_xticklabels(['', 'MM' + par, 'MC' + par, 'CM' + par, 'CC' + par, ''], rotation=90, fontsize=20)
+        ax.set_xticklabels(['', 'MM' + par, 'MC' + par, 'CM' + par, 'CC' + par, ''], rotation=45, fontsize=20)
         plt.savefig('../save/qi_' + par + '.png')
         plt.close()
 
