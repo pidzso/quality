@@ -1,5 +1,4 @@
 import numpy as np
-from torchvision import datasets, transforms
 
 
 def sort_assign(idxs, labels, num_users, num_imgs, idx_shard, dict_users):
@@ -33,21 +32,6 @@ def mnist_iid(dataset, num_users):
     return dict_users
 
 
-def mnist_noniid(dataset, num_users):
-    """
-    Sample non-I.I.D client data from MNIST dataset
-    :param dataset:
-    :param num_users:
-    :return:
-    """
-    num_shards, num_imgs = 200, 300
-    idx_shard = [i for i in range(num_shards)]
-    dict_users = {i: np.array([]) for i in range(num_users)}
-    idxs = np.arange(num_shards * num_imgs)
-    labels = dataset.train_labels.numpy()
-    return sort_assign(idxs, labels, num_users, num_imgs, idx_shard, dict_users)
-
-
 def cifar_iid(dataset, num_users):
     """
     Sample I.I.D. client data from CIFAR10 dataset
@@ -61,18 +45,3 @@ def cifar_iid(dataset, num_users):
         dict_users[i] = set(np.random.choice(all_idxs, num_items, replace=False))
         all_idxs = list(set(all_idxs) - dict_users[i])
     return dict_users
-
-
-def cifar_noniid(dataset, num_users):
-    """
-    Sample non-I.I.D client data from CIFAR10 dataset
-    :param dataset:
-    :param num_users:
-    :return:
-    """
-    num_shards, num_imgs = 200, 250
-    idx_shard = [i for i in range(num_shards)]
-    dict_users = {i: np.array([]) for i in range(num_users)}
-    idxs = np.arange(num_shards * num_imgs)
-    labels = np.array(dataset.train_labels)
-    return sort_assign(idxs, labels, num_users, num_imgs, idx_shard, dict_users)

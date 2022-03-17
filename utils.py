@@ -1,8 +1,8 @@
 import copy
 import torch
+from scipy import stats
 from torchvision import datasets, transforms
-from sampling import mnist_iid, mnist_noniid
-from sampling import cifar_iid, cifar_noniid
+from sampling import mnist_iid, cifar_iid
 
 
 def get_dataset(args):
@@ -19,16 +19,13 @@ def get_dataset(args):
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
         train_dataset = datasets.CIFAR10(data_dir, train=True, download=True,
-                                       transform=apply_transform)
+                                         transform=apply_transform)
 
         test_dataset = datasets.CIFAR10(data_dir, train=False, download=True,
-                                      transform=apply_transform)
+                                        transform=apply_transform)
 
         # sample training data amongst users
-        if args.iid:  # Sample IID user data from CIFAR
-            user_groups = cifar_iid(train_dataset, args.num_users)
-        else:  # Sample non-IID user data from CIFAR
-            user_groups = cifar_noniid(train_dataset, args.num_users)
+        user_groups = cifar_iid(train_dataset, args.num_users)
 
     elif args.dataset == 'mnist' or 'fmnist':
         if args.dataset == 'mnist':
@@ -43,10 +40,8 @@ def get_dataset(args):
         train_dataset = datasets.MNIST(data_dir, train=True, download=True, transform=apply_transform)
         test_dataset = datasets.MNIST(data_dir, train=False, download=True, transform=apply_transform)
 
-        if args.iid:  # sample training data from Mnist
-            user_groups = mnist_iid(train_dataset, args.num_users)
-        else:  # Sample Non-IID user data from Mnist
-            user_groups = mnist_noniid(train_dataset, args.num_users)
+        # sample training data from Mnist
+        user_groups = mnist_iid(train_dataset, args.num_users)
 
     return train_dataset, test_dataset, user_groups
 
@@ -61,22 +56,40 @@ def average_weights(w):
     return w_avg
 
 
+def median_weights(w, trim, device):
+    # Returns the median of the weights
+    w_tm = copy.deepcopy(w[0])
+    for key in w_tm.keys():
+        if 'bias' in key:  # 1 dimension
+            for i in range(0, len(w_tm[key])):
+                w_tm[key][i] = torch.tensor([stats.trim_mean([w[client][key][i].to("cpu") for client in range(0, len(w))], trim)], device=device)
+        elif 'conv' in key:  # 4 dimension
+            for i in range(0, len(w_tm[key])):
+                for j in range(0, len(w_tm[key][i])):
+                    for k in range(0, len(w_tm[key][i][j])):
+                        for l in range(0, len(w_tm[key][i][j][k])):
+                           w_tm[key][i][j][k][l] = torch.tensor([stats.trim_mean([w[client][key][i][j][k][l].to("cpu") for client in range(0, len(w))], trim)], device=device)
+        else:  # 2 dimension
+            for i in range(0, len(w_tm[key])):
+                for j in range(0, len(w_tm[key][i])):
+                    w_tm[key][i][j] = torch.tensor([stats.trim_mean([w[client][key][i][j].to("cpu") for client in range(0, len(w))], trim)], device=device)
+    return w_tm
+
+
 def exp_details(args):
     print('\nExperimental details:')
-    print(f'    Instance  : {args.instance}')
     print(f'    Dataset   : {args.dataset}')
-    print(f'    IID       : {args.iid}')
     print(f'    Model     : {args.model}')
-    print(f'    Rounds    : {args.epochs}\n')
-    print(f'    Weights   : {args.weight}')
-
+    print(f'    Rounds    : {args.epochs}')
     print(f'    Number of users    : {args.num_users}')
     print(f'    Fraction of users  : {args.frac}')
+    print(f'    Seed  : {args.seed}\n')
 
-    print(f'    Noise Type         : {args.noise_type}')
-    if args.noise_type == 'linear':
-        print(f'    Max Noise Level    : {args.noise_size}')
-    else:
-        print(f'    Noisy Participants : {args.noise_size}')
+    print(f'    Weights   : {args.weight}')
+    print(f'    Aggregation method : {args.aggregate}')
+    print(f'    Robustness level   : {args.robustness}\n')
+
+    print(f'    Noise Type  : {args.noise_type}')
+    print(f'    Noise Size : {args.noise_size}')
 
     return

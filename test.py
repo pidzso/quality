@@ -1,10 +1,15 @@
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from q_inf import test, position
+import os
 from scipy import stats
+import numpy as np
 from matplotlib import rcParams
+import matplotlib.pyplot as plt
+import warnings
+
+warnings.filterwarnings("ignore")
 rcParams.update({'figure.autolayout': True})
+
+from q_inf import test, position, read, QI_gen, dist, cheat_score
+
 
 def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, rounds, instance_num):
     '''
@@ -12,12 +17,10 @@ def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, 
     creates round-wise accuracies based on test and train when 'no'
     '''
 
-    train = np.zeros((instance_num, rounds + 1))
     test = np.zeros((instance_num, rounds + 1))
     path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weight) + '/'
 
     for i in np.arange(instance_num):
-        train[i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/train.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
         test[i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/test.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
 
     mins = np.transpose(test).min(axis=1)
@@ -27,16 +30,11 @@ def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, 
 
     if noise_type == 'linear':
         plt.errorbar(np.arange(rounds + 1), means, std, fmt='ok', lw=3)
-        plt.errorbar(np.arange(rounds + 1), means, [means - mins, maxes - means],
-                     fmt='.k', ecolor='gray', lw=1)
-        plt.xlim(-1, 100)
+        plt.errorbar(np.arange(rounds + 1), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
+        plt.xlim(-1, rounds)
     elif noise_type == 'no':
-        avg_tr = np.average(train, axis=0)
         avg_te = np.average(test, axis=0)
-
-        plt.plot(np.arange(rounds + 1), avg_tr, 'r', label='Train')
-        plt.plot(np.arange(rounds + 1), avg_te, 'b', label='Test')
-        plt.legend()
+        plt.plot(np.arange(rounds + 1), avg_te, 'b')
 
     plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
     plt.xlabel('Rounds', fontsize=20)
@@ -67,7 +65,7 @@ def weight_diff(model, data, participants, noise_type, noise_size, weights, roun
     plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
     plt.xlabel('Rounds', fontsize=20)
     plt.ylabel('Accuracy', fontsize=20)
-    plt.savefig('../save/weight_' + model[0] + data[0] + str(participants) + '.png')
+    plt.savefig('../save/weight_' + model[0] + data[0] + str(participants) + '(1).png')
     plt.close()
 
 
@@ -94,69 +92,164 @@ def weight_change(model, data, participants, noise_type, noise_size, weight, rou
 
 def score_change(model, data, participants, rounds, instance):
     '''
-    creates round-wise the participants' score changes
+    creates round-wise the participants' score changes for Shapley experiments
     '''
 
-    scores = np.zeros((rounds, instance, participants))
+    scores = {'QI': np.zeros((instance, rounds + 1, participants)),
+              'LO': np.zeros((instance, rounds + 1, participants)),
+              'DS': np.zeros((instance, rounds + 1, participants))}
 
-    path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
+    path = os.path.abspath('..') + '\\save\\Shapley\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
+
+    # create figs for Shapley
     for i in np.arange(instance):
-        for r in np.arange(rounds):
-            scores[r][i] = test(path + str(i + 1), ['neg', 'inc', 'help'], 'count', 0, round - 1 - r, 0)
+        start, deviant, scores['LO'][i][1:], scores['DS'][i][1:], scores['QI'][i][1:], weight, contributor, test_imp = read(path + '780' + str(i))
 
-    AVGscores = np.transpose(np.average(scores, axis=1))
-    for i in np.arange(participants):
-        plt.plot(np.arange(rounds), AVGscores[i], color=str(i / participants))
+    AVGscores = {'QI': np.transpose(np.average(scores['QI'], axis=0)),
+                 'LO': np.transpose(np.average(scores['LO'], axis=0)),
+                 'DS': np.transpose(np.average(scores['DS'], axis=0))}
 
-    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
-    plt.xlabel('Rounds', fontsize=20)
-    plt.ylabel('Scores', fontsize=20)
-    plt.savefig('../save/change_score_' + model[0] + data[0] + str(participants) + '.png')
-    plt.close()
+    for key in AVGscores.keys():
+        for i in np.arange(participants):
+            plt.plot(np.arange(rounds+1), AVGscores[key][i], color=str(i / participants))
+
+        plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+        plt.xlabel('Rounds', fontsize=20)
+        plt.ylabel('Scores_' + str(key), fontsize=20)
+        plt.savefig(path + model[0] + data[0] + str(participants) + str(key) + '.png')
+        plt.close()
 
 
-def score(model, data, participants, instance):
+def score(model, data, participants, rounds, instance):
     '''
-    creates boxplot of participant-wise quality scores
+    creates boxplot of participant-wise quality scores for Shapley experiment
     '''
 
-    scores = np.zeros((instance, participants))
+    scores = {'QI': np.zeros((instance, rounds, participants)),
+              'LO': np.zeros((instance, rounds, participants)),
+              'DS': np.zeros((instance, rounds, participants))}
 
-    path0 = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
+    path = os.path.abspath('..') + '\\save\\Shapley\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
     for i in np.arange(instance):
-        scores[i] = test(path0 + str(i + 1), ['neg', 'inc', 'help'], 'count', 0,           0,          0)
-                      #  what,               how,                     option, ignorefirst, ignorelast, treshold
+        start, deviant, scores['LO'][i], scores['DS'][i], scores['QI'][i], weight, contributor, test_imp = read(path + '780' + str(i))
 
-    mins = np.min(scores, axis=0)
-    maxes = np.max(scores, axis=0)
-    means = np.mean(scores, axis=0)
-    std = np.std(scores, axis=0)
+    AVGscores = {'QI': np.transpose(np.average(scores['QI'], axis=1)),
+                 'LO': np.transpose(np.average(scores['LO'], axis=1)),
+                 'DS': np.transpose(np.average(scores['DS'], axis=1))}
 
-    plt.errorbar(np.arange(participants), means, std, fmt='ok', lw=3)
-    plt.errorbar(np.arange(participants), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
-    plt.xlim(-1, participants)
-    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
-    plt.xlabel('Participant', fontsize=20)
-    plt.ylabel('Score', fontsize=20)
-    plt.savefig('../save/score_' + model[0] + data[0] + str(participants) + '.png')
-    plt.close()
+    for key in scores.keys():
+        mins  = np.min( AVGscores[key], axis=1)
+        maxes = np.max( AVGscores[key], axis=1)
+        means = np.mean(AVGscores[key], axis=1)
+        std   = np.std( AVGscores[key], axis=1)
+
+        plt.errorbar(np.arange(participants), means, std, fmt='ok', lw=3)
+        plt.errorbar(np.arange(participants), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
+        plt.xlim(-1, participants)
+        plt.title(model + '_' + data + '_' + str(participants) + '_' + str(key), fontsize=20)
+        plt.xlabel('Participant', fontsize=20)
+        plt.ylabel('Score_' + str(key), fontsize=20)
+        plt.savefig(path + 'score_' + model[0] + data[0] + str(participants) + str(key) + '.png')
+        plt.close()
 
 
-def order(model, data, participants, instance, ignorefirst, ignorelast, treshold, type, tests):
+def order(model, data, participants, instance, rounds, aggregate=''):
     '''
     calculates the quality inference's accuracy instance-wise
+    for both Shapley and RobustRand
     '''
 
-    scores = np.zeros((instance, participants))
-    sp = np.zeros(instance)
-    path0 = '../save/' + model + '_' + data + '_' + str(participants) + '/' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '/'
+    #path = os.path.abspath('..') + '\\save\\Shapley\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
+    path = os.path.abspath('..') + '\\save\\RobustRand\\' + model + '_' + data + '_' + str(participants) +'\\' + 'no' + '_' + str(0.0) + '_' + str(0.0) + aggregate + '\\'
+
+    scores = {'QI': np.zeros((instance, rounds, participants)),
+              'LO': np.zeros((instance, rounds, participants)),
+              'DS': np.zeros((instance, rounds, participants))}
+    sp = {'QI': np.zeros((instance, rounds)),
+          'LO': np.zeros((instance, rounds)),
+          'DS': np.zeros((instance, rounds))}
 
     for i in np.arange(instance):
-        scores[i] = test(path0 + str(i + 1), tests, type, ignorefirst, ignorelast, treshold)
-        sp[i] = stats.spearmanr(np.arange(participants), scores[i])[0]
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html
+        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i + 1))
+        #start, deviant, scores['LO'][i], scores['DS'][i], scores['QI'][i], weight, contributor, test_imp = read(path + '780' + str(i))
+
+    for key in scores.keys():
+        for i in np.arange(instance):
+            for r in np.arange(rounds):
+                sp[key][i][r] = stats.spearmanr(np.arange(participants), scores[key][i][r])[0]
+
+    #plt.plot(np.arange(rounds), np.average(sp['QI'], axis=0), color='red',   label='QI')
+    #plt.plot(np.arange(rounds), np.average(sp['LO'], axis=0), color='blue',  label='LO')
+    #plt.plot(np.arange(rounds), np.average(sp['DS'], axis=0), color='green', label='DS')
+
+    #plt.legend()
+    #plt.ylim(0, 1)
+    #plt.title('order_' + model + '_' + data + '_' + str(participants), fontsize=20)
+    #plt.xlabel('Rounds', fontsize=20)
+    #plt.ylabel('Spearman', fontsize=20)
+    #plt.savefig(path + 'order_' + model[0] + data[0] + str(participants) + '.png')
+    #plt.close()
 
     return sp
+
+def generate_RobustRand_figs():
+    '''
+    generate average QI values for RobustRand honest and cheating participants
+    '''
+
+    for da in ['mnist', 'cifar']:
+        for mo in ['mlp', 'cnn']:
+            for de in ['attack', 'freeride']:
+                for num in [1.0, 3.0, 7.0, 15.0]:
+                    s0  = cheat_score(mo, da, 32, 3, 100, de, num, 'avg', 0)
+                    s3  = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 3)
+                    s7  = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 7)
+                    s15 = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 15)
+
+                    dev = [s0[0], s3[0], s7[0], s15[0]]
+                    hon = [s0[1], s3[1], s7[1], s15[1]]
+
+                    plt.plot(np.arange(4), dev, color='red',   label='Deviant')
+                    plt.plot(np.arange(4), hon, color='green',  label='Honest')
+
+                    plt.legend()
+                    plt.title(mo + '_' + da + '_' + de + '_' + str(num), fontsize=20)
+                    plt.xlabel('Trimming Size [0, 3, 7, 15]', fontsize=20)
+                    plt.ylabel('QI Scores', fontsize=20)
+                    plt.savefig(os.path.abspath('..') + '\\save\\RobustRand\\' + mo + '_' + da + '_' + de + '_' + str(num) + '.png')
+                    plt.close()
+
+def generate_Shapley_figs():
+    '''
+    generate QI vs LO values for Shapley
+    '''
+
+    mean  = np.zeros(16)
+    maxes = np.zeros(16)
+    mins  = np.zeros(16)
+    std   = np.zeros(16)
+    i = 0
+    fig, ax = plt.subplots()
+    plt.xlim(-1, 16)
+    plt.ylim(0, 1)
+    plt.title('TrimMean', fontsize=20)
+    plt.title('QI vs LOO', fontsize=20)
+    plt.ylabel('Spearman', fontsize=20)
+    for p in [5, 25]:
+        for d in ['mnist', 'cifar']:
+            for m in ['mlp', 'cnn']:
+                for key in ['QI', 'LO']:
+                    tmp = order(m, d, p, 10, 100)
+                    mean[i]  = np.mean(np.transpose(tmp[key])[99])
+                    maxes[i] = np.max( np.transpose(tmp[key])[99])
+                    mins[i]  = np.min( np.transpose(tmp[key])[99])
+                    std[i]   = np.std( np.transpose(tmp[key])[99])
+                    i = i + 1
+
+    plt.errorbar(np.arange(16), mean, std, fmt='ok', lw=3)
+    plt.errorbar(np.arange(16), mean, [mean - mins, maxes - mean], fmt='.k', ecolor='gray', lw=1)
+    plt.savefig(os.path.abspath('..') + '\\save\\Shapley\\QI-LO.png')
+    plt.close()
 
 
 def pos(participants):
@@ -185,22 +278,6 @@ def pos(participants):
         ax.set_xticklabels(['', 'MM' + participants, 'MC' + participants, 'CM' + participants, 'CC' + participants, ''], rotation=45, fontsize=20)
         plt.savefig('../save/' + participants + s + '.png')
         plt.close()
-
-
-def find_opt(model, data, participants, instance, tests):
-    '''
-    finds the optimal parameters to maximize the average score
-    '''
-
-    ignorefirst = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    treshold = [0, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56]
-    best = [0, 0.0, 'count']
-    for ty in ['count', 'value']:
-        for ig in ignorefirst:
-            for th in treshold:
-                if np.mean(order(model, data, participants, instance, best[0], 0, best[1], best[2], tests)) < np.mean(order(model, data, participants, instance, ig, 0, th, ty, tests)):
-                    best = [ig, th, ty]
-    return best
 
 
 def order_show(participants):
