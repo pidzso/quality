@@ -27,6 +27,8 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
 
     start, deviant, loo, dshapley, qi, weight, contributors, test_imp = read(what)
 
+    starting, deviants, contributors, improvements, weights = read_cheat('005', '000a', 1)
+
     score = np.zeros(np.amax(contributors) + 1)
     if 'neg' in how:  # if big negative, than -
         for round in range(ignorefirst, len(test_imp) - ignorelast):
@@ -133,7 +135,7 @@ def QI_gen(model, data, participants, rounds, instance, exp_type, exp_size, agr,
             tmp = path + str(i + 1)
 
         for r in np.arange(rounds):
-            scores[i][r + 1] = test(path + str(i + 1), ['neg', 'inc', 'help'], 'count', 0, rounds - 1 - r, 0)
+            scores[i][r + 1] = test(tmp, ['neg', 'inc', 'help'], 'count', 0, rounds - 1 - r, 0)
         with open(tmp + '\\qi.npy', 'wb') as f:
             np.save(f, np.array(scores[i][1:]))
 
@@ -187,3 +189,166 @@ def cheat_score(model, data, participants, instance, rounds, dev_type, dev_size,
         hon = hon + avg_scores[rounds - 1][h] / (participants - len(deviant))
 
     return dev, hon
+
+
+# read misbehaviour experiments
+def read_OLD(participants, instance, dev_num):
+    '''
+        Starting:
+            float
+        Deviants:
+            list of ints
+        roundWise Contributors:
+             list of list
+        Improvements:
+            list
+    '''
+
+    deviants = []
+    contributors = []
+    improvements = []
+    weights = []
+    aux = []
+
+    if participants == '005':
+        par = '5/5_2_'
+    elif participants == '025':
+        par = '25/25_5_'
+    elif participants == '100':
+        par = '100/100_10_'
+
+    par = par + str(dev_num) + '/'
+
+    with open("../save/" + par + "result" + instance + ".txt", 'r') as f:
+        for line in f:
+            aux.append(line)
+
+    counter = 0  # what data we read currently
+    ind = 0  # reading start after [
+    round_count = -1  # where to save in contribution
+    construct = ''  # create number from characters
+
+    # which part are we reading
+    for line in aux:
+        if line == 'Starting:\n':
+            counter = 1
+            continue
+        elif line == 'Deviants:\n':
+            counter = 2
+            continue
+        elif line == 'Participants:\n':
+            counter = 3
+            continue
+        elif line == 'Improvements:\n':
+            counter = 4
+            continue
+        elif line == 'Weights:\n':
+            counter = 5
+            continue
+
+        # read starting accuracy
+        if counter == 1:
+            starting = float(line.replace('\n', ''))
+
+        # read deviants
+        elif counter == 2:
+            for word in line:
+                if word == '[':
+                    ind = 1
+                    continue
+                if word == ']':
+                    ind = 0
+                    break
+                if ind == 1 and word not in {'', ' ', ',', '\n'}:
+                    deviants.append(int(word))
+
+        # read contributors
+        elif counter == 3:
+            for word in line:
+                if word == '[':
+                    ind = ind + 1
+                    if ind == 2:
+                        round_count = round_count + 1
+                        contributors.append([])
+                    continue
+                if word == ']':
+                    ind = ind - 1
+                    continue
+                if ind == 2 and word not in {'', ' ', '\n'}:
+                    if word != '.':
+                        construct = construct + word
+                    else:
+                        contributors[round_count].append(int(construct))
+                        construct = ''
+
+        # read improvements
+        elif counter == 4:
+            improvements.append([float(i) for i in line.replace('[', '').replace(']', '').replace('\n', '').split()])
+
+        # read weights
+        elif counter == 5:
+            weights.append([float(i) for i in line.replace('[', '').replace(']', '').replace('\n', '').split()])
+
+    improvements = [item for sublist in improvements for item in sublist]
+    weights = [item for sublist in weights for item in sublist]
+
+    # remove weights for non-weighted experiments
+    return starting, deviants, contributors, improvements, weights
+
+
+# calculates the average score of cheaters vs non-cheaters using OLD
+def cheat_score_OLD(par, ins, dev, how, option, ignorefirst, ignorelast, treshold):
+    # ingorelast - skipping the last iterations
+    # treshold - ignoring changes below
+    # option - count or actual
+
+    starting, deviants, contributors, test_imp, weights = read_OLD(par, ins, dev)
+
+    score = np.zeros(np.amax(contributors) + 1)
+    if 'neg' in how:  # if big negative, than -
+        for round in range(ignorefirst, len(test_imp) - ignorelast):
+            if test_imp[round] < -treshold:
+                for contributor in range(len(contributors[0])):
+                    if option == 'count':
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] - 1
+                    else:
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round]
+
+    if 'inc' in how:  # if big improvement next than -
+        for round in range(ignorefirst, len(test_imp) - 1 - ignorelast):
+            if test_imp[round] < test_imp[round + 1] - treshold:
+                for contributor in range(len(contributors[0])):
+                    if option == 'count':
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] - 1
+                    else:
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round] - test_imp[round + 1]
+
+    if 'help' in how:  # if big improvement compared to last, than +
+        for round in range(ignorefirst, len(test_imp) - ignorelast):
+            if test_imp[round] > test_imp[round - 1] + treshold:
+                for contributor in range(len(contributors[0])):
+                    if option == 'count':
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + 1
+                    else:
+                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round] - test_imp[round - 1]
+    return score
+
+'''
+final = {'a': {'honest': np.zeros([2, 2, 9]), 'cheater': np.zeros([2, 2, 9])},
+         'f': {'honest': np.zeros([2, 2, 9]), 'cheater': np.zeros([2, 2, 9])}}
+finalAVG = {'a': {'honest': np.zeros([2, 2]), 'cheater': np.zeros([2, 2])},
+            'f': {'honest': np.zeros([2, 2]), 'cheater': np.zeros([2, 2])}}
+
+participants = '100'
+dev_num = 5
+for model in range(2):  # 0:mlp, 1:cnn
+    for dataset in range(2):  # 0:mnist, 1:cifar
+        for type in ['a', 'f']:  # attack/freeride
+            for instance in range(9):
+                score = cheat_score_OLD(participants, str(model) + str(dataset) + str(instance) + type, dev_num, ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+                final[type]['honest'][model][dataset][instance] = np.mean(score[dev_num:])
+                final[type]['cheater'][model][dataset][instance] = np.mean(score[:dev_num])
+            finalAVG[type]['honest'][model][dataset] = np.mean(final[type]['honest'][model][dataset], axis=0)
+            finalAVG[type]['cheater'][model][dataset] = np.mean(final[type]['cheater'][model][dataset], axis=0)
+print(finalAVG)
+'''

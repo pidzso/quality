@@ -111,11 +111,11 @@ if __name__ == '__main__':
                 for key in w:
                     w[key] = 2 * global_model.state_dict()[key] - w[key]
 
-            # weightening the contribution
-            # ToDo weight aggregate instead of individual updates
+            # weightening the aggregate contribution
             if args.weight != 0.:
+                tmp_w = np.mean([weight[epoch, i] for i in idxs_users])
                 for key in w:
-                    w[key] = global_model.state_dict()[key] + (w[key] - global_model.state_dict()[key]) * weight[epoch, idx]
+                    w[key] = global_model.state_dict()[key] + (w[key] - global_model.state_dict()[key]) * tmp_w
 
             # always except freeriding add the new weights to the list
             if cheat[idx] != 1:
@@ -127,11 +127,8 @@ if __name__ == '__main__':
 
         # update global weights
         if not (args.noise_type == 'freeride' and len(np.intersect1d(idxs_users, deviants)) == round(args.num_users * args.frac)):
-            if args.aggregate == 'avg':
-                global_weights = average_weights(local_weights)
-                global_model.load_state_dict(global_weights)
-            elif args.aggregate == 'tm':
-                global_weights = median_weights(local_weights, (1 - (args.num_users - 2 * args.robustness) / args.num_users) / 2, device)
+            if args.aggregate == 'avg' or args.aggregate == 'tm':
+                global_weights = median_weights(local_weights, args.robustness / args.num_users, device)
                 global_model.load_state_dict(global_weights)
             elif args.aggregate == 'KRUM':
                 # ToDo
