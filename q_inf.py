@@ -1,13 +1,16 @@
 import numpy as np
 import os
 
+
 # reading the result file
 def read(instance):
-    start       = np.load(instance + '\\' + 'start.npy')
-    deviant     = np.load(instance + '\\' + 'deviant.npy')
-    weight      = np.load(instance + '\\' + 'weight.npy')
-    contributor = np.load(instance + '\\' + 'contributor.npy').astype(int)
-    test_imp    = np.load(instance + '\\' + 'test.npy')
+    if instance[-1] not in '/\\':
+        instance = instance + '\\'
+    start       = np.load(instance + 'start.npy')
+    deviant     = np.load(instance + 'deviant.npy')
+    weight      = np.load(instance + 'weight.npy')
+    contributor = np.load(instance + 'contributor.npy').astype(int)
+    test_imp    = np.load(instance + 'test.npy')
 
     # handling non existing files
     scores = {'qi': [], 'loo': [], 'dshapley': []}
@@ -26,8 +29,6 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
     # option - count or actual
 
     start, deviant, loo, dshapley, qi, weight, contributors, test_imp = read(what)
-
-    starting, deviants, contributors, improvements, weights = read_cheat('005', '000a', 1)
 
     score = np.zeros(np.amax(contributors) + 1)
     if 'neg' in how:  # if big negative, than -
@@ -115,24 +116,28 @@ def position(tests, models, Dsets, participants, ignorefirst, ignorelast, tresho
     return final
 
 
-def QI_gen(model, data, participants, rounds, instance, exp_type, exp_size, agr, source):
+def QI_gen(model, data, participants, rounds, instance, exp_type, exp_size, weight, agr_type, rob_size, source):
     '''
+    OBSOLETE: functionality is built in the federated run
     generating QI scores participant-wise and instance-wise
     '''
 
     scores = np.zeros((instance, rounds + 1, participants))
     if source == 'RobustRand':
-        path = os.path.abspath('..') + '\\save\\' + source + '\\' + model + '_' + data + '_' + str(participants) + '\\' + exp_type + '_' + str(exp_size) + '_' + str(0.0) + '_' + agr + '\\'
+        path = os.path.abspath('..') + '\\save\\' + source + '\\' + model + '_' + data + '_' + str(participants) + \
+               '\\' + exp_type + '_' + str(exp_size) + '_' + str(weight) + '_' + agr_type + str(rob_size) + '\\'
     elif source == 'Shapley':
-        path = os.path.abspath('..') + '\\save\\' + source + '\\' + model + '_' + data + '_' + str(participants) + '\\' + exp_type + '_' + str(exp_size) + '_' + str(0.0) + '\\'
+        path = os.path.abspath('..') + '\\save\\' + source + '\\' + model + '_' + data + '_' + str(participants) + \
+               '\\' + exp_type + '_' + str(exp_size) + '_' + str(weight) + '\\'
     else:
-        path = os.path.abspath('..') + '\\save\\' + model + '_' + data + '_' + str(participants) + '\\' + exp_type + '_' + str(exp_size) + '_' + str(0.0) + '\\'
+        path = os.path.abspath('..') + '\\save\\' + model + '_' + data + '_' + str(participants) + \
+               '\\' + exp_type + '_' + str(exp_size) + '_' + str(weight) + '\\'
 
     for i in np.arange(instance):
         if source == 'Shapley':
             tmp = path + '780' + str(i)  # specific seed used for Shapley experiments
         else:
-            tmp = path + str(i + 1)
+            tmp = path + str(i)  # str(i+1) if there is no 0 instance
 
         for r in np.arange(rounds):
             scores[i][r + 1] = test(tmp, ['neg', 'inc', 'help'], 'count', 0, rounds - 1 - r, 0)
@@ -178,15 +183,24 @@ def cheat_score(model, data, participants, instance, rounds, dev_type, dev_size,
     avg_scores = np.zeros((rounds, participants))
 
     for i in np.arange(instance):
-        start, deviant, alma, korte, scores[i], weight, contributor, test_imp = read(path + str(i + 1))
+        start, deviant, alma, korte, scores[i], weight, contributor, test_imp = read(path + str(i))  # str(i+1 when there is no 0 instance)
 
-    avg_scores = np.mean(scores, axis=0)
+    mins = np.min(scores, axis=0)
+    maxes = np.max(scores, axis=0)
+    avg = np.mean(scores, axis=0)
+    std = np.std(scores, axis=0)
 
-    dev, hon = 0, 0
+    dev, hon = [0, 0, 0, 0], [0, 0, 0, 0]
     for d in deviant:
-        dev = dev + avg_scores[rounds - 1][d] / len(deviant)
+        dev[0] = dev[0] + avg[rounds - 1][d] / len(deviant)
+        dev[1] = dev[1] + std[rounds - 1][d] / len(deviant)
+        dev[2] = dev[2] + mins[rounds - 1][d] / len(deviant)
+        dev[3] = dev[3] + maxes[rounds - 1][d] / len(deviant)
     for h in np.setdiff1d(np.arange(participants), deviant):
-        hon = hon + avg_scores[rounds - 1][h] / (participants - len(deviant))
+        hon[0] = hon[0] + avg[rounds - 1][h] / (participants - len(deviant))
+        hon[1] = hon[1] + std[rounds - 1][h] / (participants - len(deviant))
+        hon[2] = hon[2] + mins[rounds - 1][h] / (participants - len(deviant))
+        hon[3] = hon[3] + maxes[rounds - 1][h] / (participants - len(deviant))
 
     return dev, hon
 

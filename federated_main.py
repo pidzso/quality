@@ -10,6 +10,8 @@ from update import LocalUpdate, test_inference
 from models import MLP, CNNMnist, CNNCifar
 from utils import get_dataset, average_weights, median_weights, exp_details
 
+from test import test
+
 
 if __name__ == '__main__':
     args = args_parser()
@@ -171,3 +173,10 @@ if __name__ == '__main__':
         np.save(f, np.array(deviants))
     with open(path_project + '/save/' + path + '/test.npy', 'wb') as f:
         np.save(f, np.array(test_improvement))
+
+    # calculate QI
+    scores = np.zeros((args.epochs + 1, args.num_users))
+    for r in np.arange(args.epochs):
+        scores[r + 1] = test(path_project + '/save/' + path + '/', ['neg', 'inc', 'help'], 'count', 0, args.epochs - 1 - r, 0)
+    with open(path_project + '/save/' + path + '/qi.npy', 'wb') as f:
+        np.save(f, np.array(scores[1:]))

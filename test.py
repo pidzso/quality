@@ -21,7 +21,7 @@ def accuracy_boxplot(model, data, participants, noise_type, noise_size, weight, 
     path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weight) + '/'
 
     for i in np.arange(instance_num):
-        test[i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/test.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
+        test[i] = np.cumsum(np.insert(np.load(path + str(i) + '/test.npy'), 0, np.load(path + str(i) + '/start.npy')))  # str(i+1) when 0 not exists
 
     mins = np.transpose(test).min(axis=1)
     maxes = np.transpose(test).max(axis=1)
@@ -56,7 +56,7 @@ def weight_diff(model, data, participants, noise_type, noise_size, weights, roun
     for w in np.arange(len(weights)):
         path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weights[w]) + '/'
         for i in np.arange(instance_num):
-            test[w][i] = np.cumsum(np.insert(np.load(path + str(i + 1) + '/test.npy'), 0, np.load(path + str(i + 1) + '/start.npy')))
+            test[w][i] = np.cumsum(np.insert(np.load(path + str(i) + '/test.npy'), 0, np.load(path + str(i) + '/start.npy')))  # str(i+1) when 0 not exists
 
         AVGtest[w] = np.average(test[w], axis=0)
         plt.plot(np.arange(rounds + 1), AVGtest[w], color[w], label='Weight=' + str(weights[w]))
@@ -77,7 +77,7 @@ def weight_change(model, data, participants, noise_type, noise_size, weight, rou
     test = np.zeros((instance, rounds + 1, participants))
     path = '../save/' + model + '_' + data + '_' + str(participants) + '/' + noise_type + '_' + str(noise_size) + '_' + str(weight) + '/'
     for i in np.arange(instance):
-        test[i] = np.load(path + str(i + 1) + '/weight.npy')
+        test[i] = np.load(path + str(i) + '/weight.npy')  # str(i+1) when 0 not exists
 
     AVGtest = np.transpose(np.average(test, axis=0))
     for i in np.arange(participants):
@@ -170,7 +170,7 @@ def order(model, data, participants, instance, rounds, aggregate=''):
           'DS': np.zeros((instance, rounds))}
 
     for i in np.arange(instance):
-        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i + 1))
+        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i))  # str(i+1) when 0 not exists
         #start, deviant, scores['LO'][i], scores['DS'][i], scores['QI'][i], weight, contributor, test_imp = read(path + '780' + str(i))
 
     for key in scores.keys():
@@ -201,23 +201,73 @@ def generate_RobustRand_figs():
         for mo in ['mlp', 'cnn']:
             for de in ['attack', 'freeride']:
                 for num in [1.0, 3.0, 7.0, 15.0]:
-                    s0  = cheat_score(mo, da, 32, 3, 100, de, num, 'avg', 0)
-                    s3  = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 3)
-                    s7  = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 7)
-                    s15 = cheat_score(mo, da, 32, 3, 100, de, num, 'tm', 15)
+                    s0 = cheat_score(mo, da, 32, 10, 100, de, num, 'tm', 0)
+                    s1 = cheat_score(mo, da, 32, 10, 100, de, num, 'tm', 1)
+                    s2 = cheat_score(mo, da, 32, 10, 100, de, num, 'tm', 2)
+                    s3 = cheat_score(mo, da, 32, 10, 100, de, num, 'tm', 3)
 
-                    dev = [s0[0], s3[0], s7[0], s15[0]]
-                    hon = [s0[1], s3[1], s7[1], s15[1]]
+                    devAVG = [s0[0][0], s1[0][0], s2[0][0], s3[0][0]]
+                    honAVG = [s0[1][0], s1[1][0], s2[1][0], s3[1][0]]
+                    devSTD = [s0[0][1], s1[0][1], s2[0][1], s3[0][1]]
+                    honSTD = [s0[1][1], s1[1][1], s2[1][1], s3[1][1]]
+                    devMIN = [s0[0][2], s1[0][2], s2[0][2], s3[0][2]]
+                    honMIN = [s0[1][2], s1[1][2], s2[1][2], s3[1][2]]
+                    devMAX = [s0[0][3], s1[0][3], s2[0][3], s3[0][3]]
+                    honMAX = [s0[1][3], s1[1][3], s2[1][3], s3[1][3]]
 
-                    plt.plot(np.arange(4), dev, color='red',   label='Deviant')
-                    plt.plot(np.arange(4), hon, color='green',  label='Honest')
+                    #plt.plot(np.arange(4), devAVG, color='red',   label='Deviant')
+                    #plt.plot(np.arange(4), honAVG, color='green',  label='Honest')
+
+                    plt.errorbar(np.add(np.arange(4), [-0.1, -0.1, -0.1, -0.1]), devAVG, devSTD, fmt='ok', lw=10, color='red', label='Deviant')
+                    plt.errorbar(np.add(np.arange(4), [-0.1, -0.1, -0.1, -0.1]), devAVG, [np.add(devAVG, np.negative(devMIN)), np.add(devMAX, np.negative(devAVG))], fmt='.k', lw=5, ecolor='red')
+
+                    plt.errorbar(np.add(np.arange(4), [0.1, 0.1, 0.1, 0.1]), honAVG, honSTD, fmt='ok', lw=10, color='green', label='Honest')
+                    plt.errorbar(np.add(np.arange(4), [0.1, 0.1, 0.1, 0.1]), honAVG, [np.add(honAVG, np.negative(honMIN)), np.add(honMAX, np.negative(honAVG))], fmt='.k', lw=5, ecolor='green')
 
                     plt.legend()
                     plt.title(mo + '_' + da + '_' + de + '_' + str(num), fontsize=20)
-                    plt.xlabel('Trimming Size [0, 3, 7, 15]', fontsize=20)
+                    plt.xlabel('Trimming Size [0, 1, 2, 3]', fontsize=20)
                     plt.ylabel('QI Scores', fontsize=20)
                     plt.savefig(os.path.abspath('..') + '\\save\\RobustRand\\' + mo + '_' + da + '_' + de + '_' + str(num) + '.png')
                     plt.close()
+
+    for da in ['mnist', 'cifar']:
+        for mo in ['mlp', 'cnn']:
+            for de in ['attack', 'freeride']:
+                for num in [0, 1, 2, 3]:
+                    s0 = cheat_score(mo, da, 32, 10, 100, de, 1.0, 'tm', num)
+                    s1 = cheat_score(mo, da, 32, 10, 100, de, 3.0, 'tm', num)
+                    s2 = cheat_score(mo, da, 32, 10, 100, de, 7.0, 'tm', num)
+                    s3 = cheat_score(mo, da, 32, 10, 100, de, 15.0, 'tm', num)
+
+                    devAVG = [s0[0][0], s1[0][0], s2[0][0], s3[0][0]]
+                    honAVG = [s0[1][0], s1[1][0], s2[1][0], s3[1][0]]
+                    devSTD = [s0[0][1], s1[0][1], s2[0][1], s3[0][1]]
+                    honSTD = [s0[1][1], s1[1][1], s2[1][1], s3[1][1]]
+                    devMIN = [s0[0][2], s1[0][2], s2[0][2], s3[0][2]]
+                    honMIN = [s0[1][2], s1[1][2], s2[1][2], s3[1][2]]
+                    devMAX = [s0[0][3], s1[0][3], s2[0][3], s3[0][3]]
+                    honMAX = [s0[1][3], s1[1][3], s2[1][3], s3[1][3]]
+
+                    #plt.plot(np.arange(4), devAVG, color='red',   label='Deviant')
+                    #plt.plot(np.arange(4), honAVG, color='green',  label='Honest')
+
+                    plt.errorbar(np.add(np.arange(4), [-0.1, -0.1, -0.1, -0.1]), devAVG, devSTD, fmt='ok', lw=10, color='red', label='Deviant')
+                    plt.errorbar(np.add(np.arange(4), [-0.1, -0.1, -0.1, -0.1]), devAVG, [np.add(devAVG, np.negative(devMIN)), np.add(devMAX, np.negative(devAVG))], fmt='.k', lw=5, ecolor='red')
+
+                    plt.errorbar(np.add(np.arange(4), [0.1, 0.1, 0.1, 0.1]), honAVG, honSTD, fmt='ok', lw=10, color='green', label='Honest')
+                    plt.errorbar(np.add(np.arange(4), [0.1, 0.1, 0.1, 0.1]), honAVG, [np.add(honAVG, np.negative(honMIN)), np.add(honMAX, np.negative(honAVG))], fmt='.k', lw=5, ecolor='green')
+
+                    plt.legend()
+                    plt.title(mo + '_' + da + '_' + de + '_' + 'tm' + str(num), fontsize=20)
+                    plt.xlabel('Deviant Size [1, 3, 7, 15]', fontsize=20)
+                    plt.ylabel('QI Scores', fontsize=20)
+                    plt.savefig(os.path.abspath('..') + '\\save\\RobustRand\\' + mo + '_' + da + '_' + de + '_' + 'tm' + str(num) + '.png')
+                    plt.close()
+
+
+generate_RobustRand_figs()
+
 
 def generate_Shapley_figs():
     '''
@@ -392,7 +442,7 @@ def compare_order(model, data, participants, instance):
     tests = [['neg', 'inc', 'help'], ['inc', 'help'], ['neg', 'help'], ['neg', 'inc'], ['help'], ['inc'], ['neg']]
     for k in np.arange(7):
         for i in np.arange(instance):
-            scores[k][i] = test(path0 + str(i + 1), tests[k], 'count', 0, 0, 0)
+            scores[k][i] = test(path0 + str(i), tests[k], 'count', 0, 0, 0)  # str(i+1) when 0 not exists
             sp[k][i] = stats.spearmanr(np.arange(participants), scores[k][i])[0]
 
     mins =  np.min(sp, axis=1)
