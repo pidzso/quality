@@ -159,8 +159,9 @@ def order(model, data, participants, instance, rounds, aggregate=''):
     for both Shapley and RobustRand
     '''
 
+    path = os.path.abspath('..') + '\\save\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
     #path = os.path.abspath('..') + '\\save\\Shapley\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
-    path = os.path.abspath('..') + '\\save\\RobustRand\\' + model + '_' + data + '_' + str(participants) +'\\' + 'no' + '_' + str(0.0) + '_' + str(0.0) + aggregate + '\\'
+    #path = os.path.abspath('..') + '\\save\\RobustRand\\' + model + '_' + data + '_' + str(participants) +'\\' + 'no' + '_' + str(0.0) + '_' + str(0.0) + aggregate + '\\'
 
     scores = {'QI': np.zeros((instance, rounds, participants)),
               'LO': np.zeros((instance, rounds, participants)),
@@ -170,7 +171,7 @@ def order(model, data, participants, instance, rounds, aggregate=''):
           'DS': np.zeros((instance, rounds))}
 
     for i in np.arange(instance):
-        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i))  # str(i+1) when 0 not exists
+        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i+1))  # str(i) when 0 exists
         #start, deviant, scores['LO'][i], scores['DS'][i], scores['QI'][i], weight, contributor, test_imp = read(path + '780' + str(i))
 
     for key in scores.keys():
@@ -178,19 +179,42 @@ def order(model, data, participants, instance, rounds, aggregate=''):
             for r in np.arange(rounds):
                 sp[key][i][r] = stats.spearmanr(np.arange(participants), scores[key][i][r])[0]
 
+    mins  = np.min( sp['QI'], axis=0)
+    maxes = np.max( sp['QI'], axis=0)
+    means = np.mean(sp['QI'], axis=0)
+    std   = np.std( sp['QI'], axis=0)
+
+    plt.errorbar(np.arange(rounds), means, std, fmt='ok', lw=3)
+    plt.errorbar(np.arange(rounds), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
+    plt.xlim(-1, rounds)
+
     #plt.plot(np.arange(rounds), np.average(sp['QI'], axis=0), color='red',   label='QI')
     #plt.plot(np.arange(rounds), np.average(sp['LO'], axis=0), color='blue',  label='LO')
     #plt.plot(np.arange(rounds), np.average(sp['DS'], axis=0), color='green', label='DS')
 
-    #plt.legend()
-    #plt.ylim(0, 1)
-    #plt.title('order_' + model + '_' + data + '_' + str(participants), fontsize=20)
-    #plt.xlabel('Rounds', fontsize=20)
-    #plt.ylabel('Spearman', fontsize=20)
-    #plt.savefig(path + 'order_' + model[0] + data[0] + str(participants) + '.png')
-    #plt.close()
+    plt.legend()
+    plt.ylim(-1, 1)
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Spearman', fontsize=20)
+    plt.savefig(path + 'order_' + model[0] + data[0] + str(participants) + '.png')
+    plt.close()
 
     return sp
+
+
+order("mlp", "mnist", 5, 9, 100)
+order("mlp", "cifar", 5, 9, 100)
+order("cnn", "mnist", 5, 9, 100)
+order("cnn", "cifar", 5, 9, 100)
+order("mlp", "mnist", 25, 9, 100)
+order("mlp", "cifar", 25, 9, 100)
+order("cnn", "mnist", 25, 9, 100)
+order("cnn", "cifar", 25, 9, 100)
+order("mlp", "mnist", 100, 9, 100)
+order("mlp", "cifar", 100, 9, 100)
+order("cnn", "mnist", 100, 9, 100)
+order("cnn", "cifar", 100, 9, 100)
 
 def generate_RobustRand_figs():
     '''
