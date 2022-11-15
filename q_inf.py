@@ -30,34 +30,60 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
 
     start, deviant, loo, dshapley, qi, weight, contributors, test_imp = read(what)
 
-    score = np.zeros(np.amax(contributors) + 1)
+    score = np.zeros([(len(test_imp) - ignorelast - ignorefirst), np.amax(contributors) + 1])
     if 'neg' in how:  # if big negative, than -
         for round in range(ignorefirst, len(test_imp) - ignorelast):
             if test_imp[round] < -treshold:
                 for contributor in range(len(contributors[0])):
                     if option == 'count':
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] - 1
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] - 1
                     else:
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round]
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] + test_imp[round]
 
     if 'inc' in how:  # if big improvement next than -
         for round in range(ignorefirst, len(test_imp) - 1 - ignorelast):
             if test_imp[round] < test_imp[round + 1] - treshold:
                 for contributor in range(len(contributors[0])):
                     if option == 'count':
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] - 1
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] - 1
                     else:
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round] - test_imp[round + 1]
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] + test_imp[round] - test_imp[round + 1]
 
     if 'help' in how:  # if big improvement compared to last, than +
         for round in range(ignorefirst, len(test_imp) - ignorelast):
             if test_imp[round] > test_imp[round - 1] + treshold:
                 for contributor in range(len(contributors[0])):
                     if option == 'count':
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + 1
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] + 1
                     else:
-                        score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round] - test_imp[round - 1]
+                        for r in range(round, len(test_imp) - ignorelast):
+                            score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] + test_imp[round] - test_imp[round - 1]
+
+    # save QI scores
+    with open(what + '/qi.npy', 'wb') as f:
+        np.save(f, score)
+
     return score
+
+#for i in range(1, 10):
+#    test(os.path.abspath('..') + '\\save\\mlp_mnist_5\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\mlp_cifar_5\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_mnist_5\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_cifar_5\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\mlp_mnist_25\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\mlp_cifar_25\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_mnist_25\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_cifar_25\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\mlp_mnist_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\mlp_cifar_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_mnist_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#    test(os.path.abspath('..') + '\\save\\cnn_cifar_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+
 
 
 # determine the success rate of identifying the cheater with different test combinations
