@@ -155,7 +155,7 @@ def score(model, data, participants, rounds, instance):
 
 def order(model, data, participants, instance, rounds, aggregate=''):
     '''
-    calculates the quality inference's accuracy instance-wise
+    calculates the quality inference's Spearman accuracy instance-wise (or round-wise)
     for both Shapley and RobustRand
     '''
 
@@ -203,18 +203,72 @@ def order(model, data, participants, instance, rounds, aggregate=''):
     return sp
 
 
-order("mlp", "mnist", 5, 9, 100)
-order("mlp", "cifar", 5, 9, 100)
-order("cnn", "mnist", 5, 9, 100)
-order("cnn", "cifar", 5, 9, 100)
-order("mlp", "mnist", 25, 9, 100)
-order("mlp", "cifar", 25, 9, 100)
-order("cnn", "mnist", 25, 9, 100)
-order("cnn", "cifar", 25, 9, 100)
-order("mlp", "mnist", 100, 9, 100)
-order("mlp", "cifar", 100, 9, 100)
-order("cnn", "mnist", 100, 9, 100)
-order("cnn", "cifar", 100, 9, 100)
+def distance(model, data, participants, instance, rounds, dist, aggregate=''):
+    '''
+    calculates the quality inference's distance accuracy round-wise
+    for both Shapley and RobustRand
+    '''
+
+    path = os.path.abspath('..') + '\\save\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
+    #path = os.path.abspath('..') + '\\save\\Shapley\\' + model + '_' + data + '_' + str(participants) +'\\' + 'linear' + '_' + str(1.0) + '_' + str(0.0) + '\\'
+    #path = os.path.abspath('..') + '\\save\\RobustRand\\' + model + '_' + data + '_' + str(participants) +'\\' + 'no' + '_' + str(0.0) + '_' + str(0.0) + aggregate + '\\'
+
+    scores = {'QI': np.zeros((instance, rounds, participants)),
+              'LO': np.zeros((instance, rounds, participants)),
+              'DS': np.zeros((instance, rounds, participants))}
+    sp = {'QI': np.zeros((instance, rounds)),
+          'LO': np.zeros((instance, rounds)),
+          'DS': np.zeros((instance, rounds))}
+
+    for i in np.arange(instance):
+        start, deviant, tmp1, tmp2, scores['QI'][i], weight, contributor, test_imp = read(path + str(i+1))  # str(i) when 0 exists
+        #start, deviant, scores['LO'][i], scores['DS'][i], scores['QI'][i], weight, contributor, test_imp = read(path + '780' + str(i))
+
+    for key in scores.keys():
+        for i in np.arange(instance):
+            for r in np.arange(rounds):
+                sp[key][i][r] = np.sum((np.abs(np.arange(participants) - np.argsort(scores[key][i][r])))
+                                       <= (dist * participants)) / participants
+
+
+    mins  = np.min( sp['QI'], axis=0)
+    maxes = np.max( sp['QI'], axis=0)
+    means = np.mean(sp['QI'], axis=0)
+    std   = np.std( sp['QI'], axis=0)
+
+    plt.errorbar(np.arange(rounds), means, std, fmt='ok', lw=3)
+    plt.errorbar(np.arange(rounds), means, [means - mins, maxes - means], fmt='.k', ecolor='gray', lw=1)
+    plt.xlim(-1, rounds)
+
+    #plt.plot(np.arange(rounds), np.average(sp['QI'], axis=0), color='red',   label='QI')
+    #plt.plot(np.arange(rounds), np.average(sp['LO'], axis=0), color='blue',  label='LO')
+    #plt.plot(np.arange(rounds), np.average(sp['DS'], axis=0), color='green', label='DS')
+
+    plt.legend()
+    plt.ylim(0, 1)
+    plt.title(model + '_' + data + '_' + str(participants), fontsize=20)
+    plt.xlabel('Rounds', fontsize=20)
+    plt.ylabel('Distance_' + str(dist), fontsize=20)
+    plt.savefig(path + 'distance_' + str(dist) + '_' + model[0] + data[0] + str(participants) + '.png')
+    plt.close()
+
+    return sp
+
+
+distance("mlp", "mnist", 5, 9, 100, 0.2)
+distance("cnn", "mnist", 5, 9, 100, 0.2)
+distance("mlp", "cifar", 5, 9, 100, 0.2)
+distance("cnn", "cifar", 5, 9, 100, 0.2)
+
+distance("mlp", "mnist", 25, 9, 100, 0.2)
+distance("cnn", "mnist", 25, 9, 100, 0.2)
+distance("mlp", "cifar", 25, 9, 100, 0.2)
+distance("cnn", "cifar", 25, 9, 100, 0.2)
+
+distance("mlp", "mnist", 100, 9, 100, 0.2)
+distance("cnn", "mnist", 100, 9, 100, 0.2)
+distance("mlp", "cifar", 100, 9, 100, 0.2)
+distance("cnn", "cifar", 100, 9, 100, 0.2)
 
 def generate_RobustRand_figs():
     '''
