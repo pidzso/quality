@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import pandas as pd
+from scipy.stats import ttest_ind, mannwhitneyu, chisquare, kstest
 
 
 # reading the result file
@@ -259,7 +261,7 @@ def read_OLD(participants, instance, dev_num):
 
     par = par + str(dev_num) + '/'
 
-    with open("../save/" + par + "result" + instance + ".txt", 'r') as f:
+    with open("../save/OLD/" + par + "result" + instance + ".txt", 'r') as f:
         for line in f:
             aux.append(line)
 
@@ -373,14 +375,36 @@ def cheat_score_OLD(par, ins, dev, how, option, ignorefirst, ignorelast, treshol
                         score[contributors[round][contributor]] = score[contributors[round][contributor]] + test_imp[round] - test_imp[round - 1]
     return score
 
-'''
+
+def bining(x, y):
+    df_bins = pd.DataFrame()
+    _, bins = pd.qcut(x, q=10, retbins=True, duplicates='drop')
+    df_bins['bin'] = pd.cut(x, bins=bins).value_counts().index
+    df_bins['honest_observed'] = pd.cut(x, bins=bins).value_counts().values
+    df_bins['cheater_observed'] = pd.cut(y, bins=bins).value_counts().values
+    df_bins['cheater_expected'] = df_bins['honest_observed'] / np.sum(df_bins['honest_observed']) * np.sum(df_bins['cheater_observed'])
+    return df_bins
+
+
 final = {'a': {'honest': np.zeros([2, 2, 9]), 'cheater': np.zeros([2, 2, 9])},
          'f': {'honest': np.zeros([2, 2, 9]), 'cheater': np.zeros([2, 2, 9])}}
 finalAVG = {'a': {'honest': np.zeros([2, 2]), 'cheater': np.zeros([2, 2])},
             'f': {'honest': np.zeros([2, 2]), 'cheater': np.zeros([2, 2])}}
 
+T  = np.zeros([2,2,2])
+W  = np.zeros([2,2,2])
+MW = np.zeros([2,2,2])
+CS = np.zeros([2,2,2])
+KS = np.zeros([2,2,2])
+
+
+filename = the_path_of_file
+with open(filename, "rb") as f:
+    matrix = pickle.load(f)
+
 participants = '100'
 dev_num = 5
+scores = {'honest': np.array([]), 'cheater': np.array([])}
 for model in range(2):  # 0:mlp, 1:cnn
     for dataset in range(2):  # 0:mnist, 1:cifar
         for type in ['a', 'f']:  # attack/freeride
@@ -388,7 +412,20 @@ for model in range(2):  # 0:mlp, 1:cnn
                 score = cheat_score_OLD(participants, str(model) + str(dataset) + str(instance) + type, dev_num, ['neg', 'inc', 'help'], 'count', 0, 0, 0)
                 final[type]['honest'][model][dataset][instance] = np.mean(score[dev_num:])
                 final[type]['cheater'][model][dataset][instance] = np.mean(score[:dev_num])
+                scores['honest'] = np.concatenate((scores['honest'], np.array(score[dev_num:])))
+                scores['cheater'] = np.concatenate((scores['cheater'], np.array(score[:dev_num])))
             finalAVG[type]['honest'][model][dataset] = np.mean(final[type]['honest'][model][dataset], axis=0)
             finalAVG[type]['cheater'][model][dataset] = np.mean(final[type]['cheater'][model][dataset], axis=0)
-print(finalAVG)
-'''
+            df_bins = bining(scores['honest'], scores['cheater'])
+            T[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=True)[1]
+            W[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=False)[1]
+            MW[int(type=='f')][model][dataset] = mannwhitneyu(scores['honest'], scores['cheater'], alternative='greater')[1]
+            CS[int(type=='f')][model][dataset] = chisquare(f_exp=df_bins['cheater_expected'], f_obs=df_bins['cheater_observed'])[1]
+            KS[int(type=='f')][model][dataset] = kstest(scores['honest'], scores['cheater'])[1]
+
+print(T)
+print(W)
+print(MW)
+print(CS)
+print(KS)
+#print(finalAVG)
