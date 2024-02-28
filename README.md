@@ -28,8 +28,11 @@ The default values for various paramters parsed to the experiment are given in `
 * ```--weight:```     Weighting of users. Default is no weights, set to 1 for weighting.
 * ```--noise_type:``` Default: 'no', Options: 'linear', 'some', 'attack', 'freeride'
 * ```--noise_size:``` Default: 0. Options: 'linear' (max noise level) 'rest' (num. of noisy par. with noise 0.5)
-* ```--aggregate:``` Default: ''. Options: 'avg', 'tm', 'KRUM', 'RR'
+* ```--aggregate:```  Default: ''. Options: 'avg', 'tm', 'KRUM', 'RR'
 * ```--robustness:``` Default: 0. Trimming parameter of TrimmedMean (tm)
+** ```--r_check:```   Default: 0. Round number when QI testing takes place in cross_silo setting.
+* ```--anon_set:```   Default: 1. Anonymity set of clients during testing.
+* ```--groupping:```  Default: ''. Technique to decide which coalitions should be tested.
 
 * ```--optimizer:```  Default: 'sgd'. Options: 'sgd', 'Adam'
 * ```--lr:```         Default: 0.01

@@ -56,6 +56,16 @@ def average_weights(w):
     return w_avg
 
 
+def average_some_weights(w, k):
+    # Returns the average of the weights
+    w_avg = copy.deepcopy(w[k[0]])
+    for key in w_avg.keys():
+        for i in k[1:]:
+            w_avg[key] += w[i][key]
+        w_avg[key] = torch.div(w_avg[key], len(k))
+    return w_avg
+
+
 def median_weights(w, trim, device):
     # Returns the median of the weights
     w_tm = copy.deepcopy(w[0])
@@ -90,6 +100,10 @@ def exp_details(args):
     print(f'    Robustness level   : {args.robustness}\n')
 
     print(f'    Noise Type  : {args.noise_type}')
-    print(f'    Noise Size : {args.noise_size}')
+    print(f'    Noise Size : {args.noise_size}\n')
+
+    print(f'    Cross Silo    : {1.0 == args.frac}')
+    print(f'    Anonymity Set : {args.anon_set}')
+    print(f'    Test Round    : {args.r_check}')
 
     return

@@ -66,10 +66,6 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
                         for r in range(round, len(test_imp) - ignorelast):
                             score[r][contributors[round][contributor]] = score[r][contributors[round][contributor]] + test_imp[round] - test_imp[round - 1]
 
-    # save QI scores
-    with open(what + '/qi.npy', 'wb') as f:
-        np.save(f, score)
-
     return score
 
 #for i in range(1, 10):
@@ -86,6 +82,35 @@ def test(what, how, option, ignorefirst, ignorelast, treshold):
 #    test(os.path.abspath('..') + '\\save\\cnn_mnist_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
 #    test(os.path.abspath('..') + '\\save\\cnn_cifar_100\\linear_1.0_0.0\\' + str(i), ['neg', 'inc', 'help'], 'count', 0, 0, 0)
 
+
+# determine the groups to be tested within a single round
+def groupping(cardinality, usercount, method):
+
+    groups = []
+
+    # minimal working solution
+    if cardinality == 1:
+        groups = [[i] for i in range(usercount)]
+
+    # ToDo
+    if method == 'GT':
+        print("ToDo")
+
+    return groups
+
+
+# computing the QI scores during a single round
+def singleround(groups, improvement, users):
+    actual = improvement
+    gscore = np.zeros(len(groups))
+    score = np.zeros(users)
+    for e, i in enumerate(np.sort(improvement)):
+        gscore[actual.index(i)] = e
+    for e, g in enumerate(groups):
+        for i in range(users):
+            if i in g:
+                score[i] += gscore[e]
+    return score
 
 
 # determine the success rate of identifying the cheater with different test combinations
@@ -398,34 +423,34 @@ CS = np.zeros([2,2,2])
 KS = np.zeros([2,2,2])
 
 
-filename = the_path_of_file
-with open(filename, "rb") as f:
-    matrix = pickle.load(f)
-
-participants = '100'
-dev_num = 5
-scores = {'honest': np.array([]), 'cheater': np.array([])}
-for model in range(2):  # 0:mlp, 1:cnn
-    for dataset in range(2):  # 0:mnist, 1:cifar
-        for type in ['a', 'f']:  # attack/freeride
-            for instance in range(9):
-                score = cheat_score_OLD(participants, str(model) + str(dataset) + str(instance) + type, dev_num, ['neg', 'inc', 'help'], 'count', 0, 0, 0)
-                final[type]['honest'][model][dataset][instance] = np.mean(score[dev_num:])
-                final[type]['cheater'][model][dataset][instance] = np.mean(score[:dev_num])
-                scores['honest'] = np.concatenate((scores['honest'], np.array(score[dev_num:])))
-                scores['cheater'] = np.concatenate((scores['cheater'], np.array(score[:dev_num])))
-            finalAVG[type]['honest'][model][dataset] = np.mean(final[type]['honest'][model][dataset], axis=0)
-            finalAVG[type]['cheater'][model][dataset] = np.mean(final[type]['cheater'][model][dataset], axis=0)
-            df_bins = bining(scores['honest'], scores['cheater'])
-            T[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=True)[1]
-            W[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=False)[1]
-            MW[int(type=='f')][model][dataset] = mannwhitneyu(scores['honest'], scores['cheater'], alternative='greater')[1]
-            CS[int(type=='f')][model][dataset] = chisquare(f_exp=df_bins['cheater_expected'], f_obs=df_bins['cheater_observed'])[1]
-            KS[int(type=='f')][model][dataset] = kstest(scores['honest'], scores['cheater'])[1]
-
-print(T)
-print(W)
-print(MW)
-print(CS)
-print(KS)
+#filename = the_path_of_file
+#with open(filename, "rb") as f:
+#    matrix = pickle.load(f)
+#
+#participants = '100'
+#dev_num = 5
+#scores = {'honest': np.array([]), 'cheater': np.array([])}
+#for model in range(2):  # 0:mlp, 1:cnn
+#    for dataset in range(2):  # 0:mnist, 1:cifar
+#        for type in ['a', 'f']:  # attack/freeride
+#            for instance in range(9):
+#                score = cheat_score_OLD(participants, str(model) + str(dataset) + str(instance) + type, dev_num, ['neg', 'inc', 'help'], 'count', 0, 0, 0)
+#                final[type]['honest'][model][dataset][instance] = np.mean(score[dev_num:])
+#                final[type]['cheater'][model][dataset][instance] = np.mean(score[:dev_num])
+#                scores['honest'] = np.concatenate((scores['honest'], np.array(score[dev_num:])))
+#                scores['cheater'] = np.concatenate((scores['cheater'], np.array(score[:dev_num])))
+#            finalAVG[type]['honest'][model][dataset] = np.mean(final[type]['honest'][model][dataset], axis=0)
+#            finalAVG[type]['cheater'][model][dataset] = np.mean(final[type]['cheater'][model][dataset], axis=0)
+#            df_bins = bining(scores['honest'], scores['cheater'])
+#            T[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=True)[1]
+#            W[int(type=='f')][model][dataset] = ttest_ind(scores['honest'], scores['cheater'], alternative='greater', equal_var=False)[1]
+#            MW[int(type=='f')][model][dataset] = mannwhitneyu(scores['honest'], scores['cheater'], alternative='greater')[1]
+#            CS[int(type=='f')][model][dataset] = chisquare(f_exp=df_bins['cheater_expected'], f_obs=df_bins['cheater_observed'])[1]
+#            KS[int(type=='f')][model][dataset] = kstest(scores['honest'], scores['cheater'])[1]
+#
+#print(T)
+#print(W)
+#print(MW)
+#print(CS)
+#print(KS)
 #print(finalAVG)

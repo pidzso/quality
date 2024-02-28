@@ -4,13 +4,15 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+from operator import itemgetter
 
 from options import args_parser
 from update import LocalUpdate, test_inference
 from models import MLP, CNNMnist, CNNCifar
-from utils import get_dataset, average_weights, median_weights, exp_details
+from utils import get_dataset, average_weights, average_some_weights, median_weights, exp_details
 
 from test import test
+from q_inf import groupping, singleround
 
 
 if __name__ == '__main__':
@@ -97,6 +99,7 @@ if __name__ == '__main__':
 
     # copy weights
     global_weights = global_model.state_dict()
+    temp = copy.deepcopy(global_model)  # for cross-silo checking
 
     # contribution measuring variables
     contributors = np.zeros([args.epochs, int(args.num_users * args.frac)])
@@ -105,13 +108,14 @@ if __name__ == '__main__':
 
     # initial model's accuracy
     test_acc = test_inference(args, global_model, test_dataset)[0]
-    old_test_acc = test_acc
 
     # save starting accuracy
     with open(path_project + '/save/' + path + '/start.npy', 'wb') as f:
         np.save(f, np.array([100 * round(test_acc, 6)]))
 
     for epoch in tqdm(range(args.epochs)):
+
+        old_test_acc = test_acc
 
         local_weights = []
         global_model.train()
@@ -171,7 +175,6 @@ if __name__ == '__main__':
         # measure the model test improvement epoch-wise
         test_acc, test_loss = test_inference(args, global_model, test_dataset)
         test_improvement[epoch] = 100 * round(test_acc - old_test_acc, 6)
-        old_test_acc = test_acc
 
         # update participant weights
         if args.weight != 0. and epoch > 0:
@@ -185,8 +188,28 @@ if __name__ == '__main__':
                 for contributor in contributors[epoch - 1]:
                     weight[epoch + 1, int(contributor)] = weight[epoch + 1, int(contributor)] * (1 - args.weight)
 
+        # QI testing for Cross-Silo setting
+        if args.frac == 1 and args.r_check == epoch + 1:
+
+            # select groups based on method
+            groups = groupping(args.anon_set, args.num_users, args.groupping)
+            g_imp = []
+
+            # checking groups accuracies
+            for g in groups:
+                temp.load_state_dict(average_some_weights(local_weights, g))
+                g_imp.append(test_inference(args, temp, test_dataset)[0] - old_test_acc)
+
+            # translating it into scores
+            try:
+                tmp = sum(test_improvement[:args.r_check-1])
+            except:
+                tmp = [0]
+            singleround(groups, g_imp, args.num_users)
+
     # Test inference after completion of training
     test_acc = test_inference(args, global_model, test_dataset)[0]
+
 
     print(f' \n Results after {args.epochs} global rounds of training:')
     print("|---- Test Accuracy: {:.2f}%".format(100 * test_acc))
@@ -203,7 +226,6 @@ if __name__ == '__main__':
 
     # calculate QI
     scores = np.zeros((args.epochs + 1, args.num_users))
-    for r in np.arange(args.epochs):
-        scores[r + 1] = test(path_project + '/save/' + path + '/', ['neg', 'inc', 'help'], 'count', 0, args.epochs - 1 - r, 0)
+    scores = test(path_project + '/save/' + path + '/', ['neg', 'inc', 'help'], 'count', 0, 0, 0)
     with open(path_project + '/save/' + path + '/qi.npy', 'wb') as f:
         np.save(f, np.array(scores[1:]))

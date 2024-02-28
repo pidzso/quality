@@ -255,20 +255,20 @@ def distance(model, data, participants, instance, rounds, dist, aggregate=''):
     return sp
 
 
-distance("mlp", "mnist", 5, 9, 100, 0.2)
-distance("cnn", "mnist", 5, 9, 100, 0.2)
-distance("mlp", "cifar", 5, 9, 100, 0.2)
-distance("cnn", "cifar", 5, 9, 100, 0.2)
+#distance("mlp", "mnist", 5, 9, 100, 0.2)
+#distance("cnn", "mnist", 5, 9, 100, 0.2)
+#distance("mlp", "cifar", 5, 9, 100, 0.2)
+#distance("cnn", "cifar", 5, 9, 100, 0.2)
 
-distance("mlp", "mnist", 25, 9, 100, 0.2)
-distance("cnn", "mnist", 25, 9, 100, 0.2)
-distance("mlp", "cifar", 25, 9, 100, 0.2)
-distance("cnn", "cifar", 25, 9, 100, 0.2)
+#distance("mlp", "mnist", 25, 9, 100, 0.2)
+#distance("cnn", "mnist", 25, 9, 100, 0.2)
+#distance("mlp", "cifar", 25, 9, 100, 0.2)
+#distance("cnn", "cifar", 25, 9, 100, 0.2)
 
-distance("mlp", "mnist", 100, 9, 100, 0.2)
-distance("cnn", "mnist", 100, 9, 100, 0.2)
-distance("mlp", "cifar", 100, 9, 100, 0.2)
-distance("cnn", "cifar", 100, 9, 100, 0.2)
+#distance("mlp", "mnist", 100, 9, 100, 0.2)
+#distance("cnn", "mnist", 100, 9, 100, 0.2)
+#distance("mlp", "cifar", 100, 9, 100, 0.2)
+#distance("cnn", "cifar", 100, 9, 100, 0.2)
 
 def generate_RobustRand_figs():
     '''
@@ -344,7 +344,7 @@ def generate_RobustRand_figs():
                     plt.close()
 
 
-generate_RobustRand_figs()
+#generate_RobustRand_figs()
 
 
 def generate_Shapley_figs():
